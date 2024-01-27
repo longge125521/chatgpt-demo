@@ -53,3 +53,6 @@ html.dark{
 p {
   font-size: 15px;
 }
+.hljs-built_in, .hljs-class .hljs-title, .hljs-title.class_ {
+  color: #c18401;
+}
