@@ -1,6 +1,6 @@
 .message pre {
   background-color: #64748b10;
-  font-size: 0.8rem;
+  font-size: 0.9rem;
   padding: 0.4rem 1rem;
 }
 
@@ -10,7 +10,7 @@
 }
 
 .message table {
-  font-size: 0.8em;
+  font-size: 0.9em;
 }
 
 .message table thead tr {
@@ -27,7 +27,7 @@
 }
 
 .prose, [prose=""] {
-  max-width: 84ch;
+  max-width: 85%;
 }
 
 
