@@ -10,7 +10,7 @@
 }
 
 .message table {
-  font-size: 0.9em;
+  font-size: 0.6em;
 }
 
 .message table thead tr {
@@ -43,4 +43,9 @@ html.dark{
     color: #abb2bf;
     background: #282c34
   }
+}
+
+:is([prose=""],.prose) :where(p,ul,ol,pre):not(:where(.not-prose,.not-prose *)) {
+  margin: 1em 0;
+  line-height: 1.5;
 }
