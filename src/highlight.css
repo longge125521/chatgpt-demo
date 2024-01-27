@@ -11,7 +11,7 @@ html.dark {
 
 	.hljs {
 		color: #abb2bf;
-		background: #282c34
+		background: transparent;
 	}
 
 	.hljs-keyword,
@@ -131,7 +131,7 @@ html {
 
 	.hljs {
 		color: #383a42;
-		background: #fafafa
+		background: #transparent
 	}
 
 	.hljs-comment,
