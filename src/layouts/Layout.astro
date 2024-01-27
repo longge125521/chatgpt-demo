@@ -57,6 +57,12 @@ const { title } = Astro.props;
     padding: 6rem 2rem 4rem;
   }
 
+  @media (max-width: 767px) {
+    main {
+      max-width: 100%;
+    }
+  }
+
   ::-webkit-scrollbar {
     width: 6px;
     height: 6px;
