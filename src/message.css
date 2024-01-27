@@ -25,6 +25,14 @@
   border-bottom: 2px solid #64748b40;
 }
 
+
+html {
+  .hljs {
+    color: #383A42;
+    background: #fff
+  }
+}
+
 html.dark{
   .hljs {
     color: #abb2bf;
