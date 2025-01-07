@@ -79,11 +79,10 @@ export default ({ role, message, showRetry = () => false, onRetry }: Props) => {
   }
 
   return (
-    <div class="py-2 -mx-4 px-4 transition-colors md:hover:bg-slate/3">
-      <div class="flex gap-3 rounded-lg" class:op-75={role === 'user'}>
-        <div class={role === 'assistant' ? 'bg-gradient-to-r from-yellow-500 to-red-500 w-7 h-7 rounded-full' : 'bg-gradient-to-r from-red-300 to-blue-700 w-7 h-7 rounded-full'} />
+    <div class="py-2 -mx-4 px-4 transition-colors md:hover:bg-slate/3 w-full max-w-screen-xl mx-auto pr-[10rem]">
+      <div class="rounded-lg" class:op-75={role === 'user'}>
         <div
-          class="message prose prose-slate dark:prose-invert dark:text-slate break-words overflow-hidden"
+          class="message prose prose-slate dark:prose-invert dark:text-slate break-words overflow-hidden max-w-none"
           innerHTML={htmlString()}
         />
       </div>
