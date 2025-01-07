@@ -5,6 +5,7 @@ import IconClear from './icons/Clear'
 import MessageItem from './MessageItem'
 import SystemRoleSettings from './SystemRoleSettings'
 import ErrorMessageItem from './ErrorMessageItem'
+import { Outline } from './Outline'
 import type { ChatMessage, ErrorMessage } from '@/types'
 
 export default () => {
@@ -203,69 +204,81 @@ export default () => {
   }
 
   return (
-    <div my-6>
-      <SystemRoleSettings
-        canEdit={() => messageList().length === 0}
-        systemRoleEditing={systemRoleEditing}
-        setSystemRoleEditing={setSystemRoleEditing}
-        currentSystemRoleSettings={currentSystemRoleSettings}
-        setCurrentSystemRoleSettings={setCurrentSystemRoleSettings}
-        temperatureSetting={temperatureSetting}
-      />
-      <Index each={messageList()}>
-        {(message, index) => (
-          <MessageItem
-            role={message().role}
-            message={message().content}
-            showRetry={() => (message().role === 'assistant' && index === messageList().length - 1)}
-            onRetry={retryLastFetch}
-          />
-        )}
-      </Index>
-      {currentAssistantMessage() && (
-        <MessageItem
-          role="assistant"
-          message={currentAssistantMessage}
+    <div className="relative">
+      {(currentAssistantMessage() || messageList().length > 0) && (
+        <Outline
+          markdown={currentAssistantMessage()
+            || (messageList().length > 0
+              ? messageList()[messageList().length - 1].content
+              : ''
+            )
+          }
         />
       )}
-      { currentError() && <ErrorMessageItem data={currentError()} onRetry={retryLastFetch} /> }
-      <Show
-        when={!loading()}
-        fallback={() => (
-          <div class="gen-cb-wrapper">
-            <span>...</span>
-            <div class="gen-cb-stop" onClick={stopStreamFetch}>Stop</div>
-          </div>
-        )}
-      >
-        <div class="gen-text-wrapper" class:op-50={systemRoleEditing()}>
-          <textarea
-            ref={inputRef!}
-            disabled={systemRoleEditing()}
-            onKeyDown={handleKeydown}
-            placeholder="Enter something..."
-            autocomplete="off"
-            autofocus
-            onInput={() => {
-              inputRef.style.height = 'auto'
-              inputRef.style.height = `${inputRef.scrollHeight}px`
-            }}
-            rows="1"
-            class="gen-textarea"
+      <div my-6>
+        <SystemRoleSettings
+          canEdit={() => messageList().length === 0}
+          systemRoleEditing={systemRoleEditing}
+          setSystemRoleEditing={setSystemRoleEditing}
+          currentSystemRoleSettings={currentSystemRoleSettings}
+          setCurrentSystemRoleSettings={setCurrentSystemRoleSettings}
+          temperatureSetting={temperatureSetting}
+        />
+        <Index each={messageList()}>
+          {(message, index) => (
+            <MessageItem
+              role={message().role}
+              message={message().content}
+              showRetry={() => (message().role === 'assistant' && index === messageList().length - 1)}
+              onRetry={retryLastFetch}
+            />
+          )}
+        </Index>
+        {currentAssistantMessage() && (
+          <MessageItem
+            role="assistant"
+            message={currentAssistantMessage}
           />
-          <button onClick={handleButtonClick} disabled={systemRoleEditing()} gen-slate-btn>
-            Send
-          </button>
-          <button title="Clear" onClick={clear} disabled={systemRoleEditing()} gen-slate-btn>
-            <IconClear />
-          </button>
-        </div>
-      </Show>
-      <div class="fixed bottom-5 left-5 rounded-md hover:bg-slate/10 w-fit h-fit transition-colors active:scale-90" class:stick-btn-on={isStick()}>
-        <div>
-          <button class="p-2.5 text-base" title="stick to bottom" type="button" onClick={() => setStick(!isStick())}>
-            <div i-ph-arrow-line-down-bold />
-          </button>
+        )}
+        { currentError() && <ErrorMessageItem data={currentError()} onRetry={retryLastFetch} /> }
+        <Show
+          when={!loading()}
+          fallback={() => (
+            <div class="gen-cb-wrapper">
+              <span>...</span>
+              <div class="gen-cb-stop" onClick={stopStreamFetch}>Stop</div>
+            </div>
+          )}
+        >
+          <div class="gen-text-wrapper" class:op-50={systemRoleEditing()}>
+            <textarea
+              ref={inputRef!}
+              disabled={systemRoleEditing()}
+              onKeyDown={handleKeydown}
+              placeholder="Enter something..."
+              autocomplete="off"
+              autofocus
+              onInput={() => {
+                inputRef.style.height = 'auto'
+                inputRef.style.height = `${inputRef.scrollHeight}px`
+              }}
+              rows="1"
+              class="gen-textarea"
+            />
+            <button onClick={handleButtonClick} disabled={systemRoleEditing()} gen-slate-btn>
+              Send
+            </button>
+            <button title="Clear" onClick={clear} disabled={systemRoleEditing()} gen-slate-btn>
+              <IconClear />
+            </button>
+          </div>
+        </Show>
+        <div class="fixed bottom-5 left-5 rounded-md hover:bg-slate/10 w-fit h-fit transition-colors active:scale-90" class:stick-btn-on={isStick()}>
+          <div>
+            <button class="p-2.5 text-base" title="stick to bottom" type="button" onClick={() => setStick(!isStick())}>
+              <div i-ph-arrow-line-down-bold />
+            </button>
+          </div>
         </div>
       </div>
     </div>
