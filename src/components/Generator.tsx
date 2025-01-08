@@ -213,8 +213,7 @@ export default () => {
 
       const lines = msg.content.split('\n')
       lines.forEach((line, lineIndex) => {
-        if (index === 0 && lineIndex === 0)
-          return
+        if (index === 0 && lineIndex === 0) return
 
         if (line.startsWith('```')) {
           if (isInCodeBlock) {
@@ -241,8 +240,7 @@ export default () => {
         }
       })
 
-      if (isInCodeBlock)
-        content += '</code></pre>'
+      if (isInCodeBlock) content += '</code></pre>'
 
       return `<div class="message-content">${content}</div>`
     }).join('')
@@ -260,7 +258,7 @@ export default () => {
           }
           body { 
             font-family: "Segoe UI", sans-serif;
-            font-size: 11pt;
+            font-size: 12pt;
             line-height: 1.4;
             max-width: 100%;
             margin: 0 auto;
@@ -270,7 +268,7 @@ export default () => {
           }
           .main-title {
             text-align: center;
-            font-size: 24pt;
+            font-size: 26pt;
             font-weight: bold;
             margin: 20pt 0;
             color: #2C3E50;
@@ -286,7 +284,7 @@ export default () => {
             border: 1pt solid #D1D5DB;
             border-radius: 4pt;
             font-family: "Consolas", monospace;
-            font-size: 11pt;
+            font-size: 12pt;
             margin: 8pt 0;
             white-space: pre-wrap;
             line-height: 1.4;
@@ -295,6 +293,7 @@ export default () => {
           code {
             font-family: inherit;
             display: block;
+            font-size: 11pt;
           }
           .heading-1 {
             font-size: 20pt;
