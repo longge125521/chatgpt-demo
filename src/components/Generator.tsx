@@ -1,5 +1,7 @@
-import { Index, Show, createEffect, createSignal, onCleanup, onMount } from 'solid-js'
+import { Index, Show, createEffect, createRef, createSignal, onCleanup, onMount } from 'solid-js'
 import { useThrottleFn } from 'solidjs-use'
+import { saveAs } from 'file-saver'
+import { useState } from 'react'
 import { generateSignature } from '@/utils/auth'
 import IconClear from './icons/Clear'
 import MessageItem from './MessageItem'
@@ -21,6 +23,9 @@ export default () => {
   const [temperature, setTemperature] = createSignal(0.6)
   const temperatureSetting = (value: number) => { setTemperature(value) }
   const maxHistoryMessages = parseInt(import.meta.env.PUBLIC_MAX_HISTORY_MESSAGES || '9')
+  const [firstQuestion, setFirstQuestion] = createSignal('')
+  const [searchText, setSearchText] = createSignal('')
+  const [fileName, setFileName] = createSignal('')
 
   createEffect(() => (isStick() && smoothToBottom()))
 
@@ -62,6 +67,9 @@ export default () => {
     const inputValue = inputRef.value
     if (!inputValue)
       return
+
+    if (!firstQuestion())
+      setFirstQuestion(inputValue)
 
     inputRef.value = ''
     setMessageList([
@@ -203,6 +211,68 @@ export default () => {
     }
   }
 
+  const exportToWord = () => {
+    const contentElement = document.querySelector('.relative')
+    const content = contentElement ? contentElement.innerHTML : ''
+
+    // Remove unwanted text (e.g., "Copy")
+    const cleanedContent = content.replace(/Copy/g, '').trim()
+
+    // Create a Blob for the Word file and trigger download
+    const blob = new Blob([`
+      <html>
+        <head>
+          <meta charset="utf-8">
+          <title>Exported Document</title>
+        </head>
+        <body>${cleanedContent}</body>
+      </html>
+    `], { type: 'application/msword' })
+
+    // Use the first MessageItem's content as the file name
+    const firstMessage = messageList().length > 0 ? messageList()[0].content : 'exported_document'
+    saveAs(blob, `${firstMessage || 'exported_document'}.doc`)
+  }
+
+  const exportToMarkdown = () => {
+    const contentElement = document.querySelector('.relative')
+    const content = contentElement ? contentElement.innerText : ''
+
+    // Remove unwanted text (e.g., "Copy")
+    const cleanedContent = content.replace(/Copy/g, '').trim()
+
+    // Ensure cleanedContent is not empty before generating outline
+    const outline = cleanedContent ? generateOutline(cleanedContent) : ''
+    const markdownContent = `${outline}\n\n${cleanedContent}`
+    const blob = new Blob([markdownContent], { type: 'text/markdown' })
+
+    // Use the first MessageItem's content as the file name
+    const firstMessage = messageList().length > 0 ? messageList()[0].content : 'exported_document'
+    saveAs(blob, `${firstMessage || 'exported_document'}.md`)
+  }
+
+  const generateOutline = (content: string) => {
+    const lines = content.split('\n')
+    let outline = ''
+
+    // Use the first question as the title
+    outline += `# ${firstQuestion() || 'Outline'}\n\n`
+
+    lines.forEach((line) => {
+      if (line.startsWith('#')) { // Check for headers
+        const level = line.match(/^#+/)[0].length // Determine header level
+        outline += `${'  '.repeat(level - 1)}- ${line.replace(/^#+\s*/, '')}\n` // Format outline
+      }
+    })
+
+    return outline.trim() // Return the formatted outline
+  }
+
+  const handleSearch = (text: string) => {
+    setSearchText(text)
+    setFileName(text || inputRef.value.split('\n')[0] || '')
+  }
+
   return (
     <div className="relative">
       {(currentAssistantMessage() || messageList().length > 0) && (
@@ -273,12 +343,20 @@ export default () => {
             </button>
           </div>
         </Show>
-        <div class="fixed bottom-5 left-5 rounded-md hover:bg-slate/10 w-fit h-fit transition-colors active:scale-90" class:stick-btn-on={isStick()}>
-          <div>
-            <button class="p-2.5 text-base" title="stick to bottom" type="button" onClick={() => setStick(!isStick())}>
-              <div i-ph-arrow-line-down-bold />
-            </button>
-          </div>
+      </div>
+      <div class="fixed bottom-5 left-5 flex items-center gap-4">
+        <div class="stick-btn">
+          <button class="p-2.5 text-base" title="stick to bottom" type="button" onClick={() => setStick(!isStick())}>
+            <div i-ph-arrow-line-down-bold />
+          </button>
+        </div>
+        <div class="floating-buttons flex items-center gap-2">
+          <button onClick={exportToWord} class="export-button">
+            <img src="/word-icon.svg" alt="Export to Word" class="icon" />
+          </button>
+          <button onClick={exportToMarkdown} class="export-button">
+            <img src="/md-icon.svg" alt="Export to Markdown" class="icon" />
+          </button>
         </div>
       </div>
     </div>

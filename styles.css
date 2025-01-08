@@ -1,0 +1,43 @@
+:is(pre) code.hljs {
+  /* Your existing styles for pre code.hljs */
+} 
+
+.icon {
+  width: 16px; /* Adjust size as needed */
+  height: 16px; /* Adjust size as needed */
+  margin-right: 8px; /* Space between icon and text */
+  vertical-align: middle; /* Align icon with text */
+} 
+
+.fixed {
+  display: flex; /* Ensure the fixed container uses flexbox */
+  align-items: center; /* Center items vertically */
+  justify-content: space-between; /* Distribute space evenly */
+  width: auto; /* Allow width to adapt to content */
+  padding: 0 10px; /* Optional: Add some padding for aesthetics */
+}
+
+.stick-btn {
+  margin-right: 10px; /* Space between stick button and export buttons */
+}
+
+.floating-buttons {
+  display: flex; /* Ensure export buttons are in a row */
+  gap: 10px; /* Space between export buttons */
+}
+
+.export-button {
+  background: rgba(255, 255, 255, 0.8); /* Optional: background for better visibility */
+  border: none; /* Remove default button border */
+  border-radius: 5px; /* Rounded corners */
+  padding: 10px; /* Padding around the icon */
+  cursor: pointer; /* Pointer cursor on hover */
+  transition: background 0.3s; /* Smooth background transition */
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2); /* Add shadow for depth */
+  flex: 1; /* Allow buttons to grow equally */
+}
+
+.export-button:hover {
+  background: rgba(255, 255, 255, 1); /* Change background on hover */
+  transform: scale(1.05); /* Slightly enlarge on hover */
+} 
