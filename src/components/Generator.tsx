@@ -221,22 +221,22 @@ export default () => {
             content += '</pre>'
           } else {
             codeLanguage = line.slice(3).trim()
-            content += `<pre class="code-block ${codeLanguage}">`
+            content += `<pre class="code-block ${codeLanguage}"><code class="language-${codeLanguage}">`
           }
           isInCodeBlock = !isInCodeBlock
         } else if (line.startsWith('#')) {
           const level = line.match(/^#+/)[0].length
-          content += `<h${level}>${line.replace(/^#+\s*/, '')}</h${level}>`
+          content += `<h${level} class="heading-${level}">${line.replace(/^#+\s*/, '')}</h${level}>`
         } else {
           if (isInCodeBlock)
             content += `${line}\n`
           else if (line.trim())
-            content += `<p>${line}</p>`
+            content += `<p class="paragraph">${line}</p>`
         }
       })
 
       if (isInCodeBlock)
-        content += '</pre>'
+        content += '</code></pre>'
 
       return `<div class="message-content">${content}</div>`
     }).join('')
@@ -248,43 +248,80 @@ export default () => {
         <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
         <?mso-application progid="Word.Document"?>
         <style>
+          @page {
+            size: A4;
+            margin: 2.54cm 3.18cm;
+          }
           body { 
-            font-family: Arial, sans-serif; 
-            line-height: 1.3;
-            max-width: 800px;
+            font-family: "Calibri", sans-serif;
+            font-size: 12pt;
+            line-height: 1.5;
+            max-width: 100%;
             margin: 0 auto;
-            padding: 20px;
+            padding: 0;
+            word-wrap: break-word;
           }
           .main-title {
             text-align: center;
-            font-size: 1.8em;
+            font-size: 28pt;
             font-weight: bold;
-            margin: 0.8em auto;
-            padding-bottom: 0.3em;
-            border-bottom: 2px solid #4B5563;
-            color: #111827;
+            margin: 28pt 0;
+            color: #000000;
+            font-family: "Calibri Light", sans-serif;
           }
           .message-content { 
-            color: #374151;
-            margin-bottom: 10px;
+            color: #000000;
+            margin: 0;
           }
           .code-block { 
-            background-color: #f6f6f6;
-            padding: 10px;
-            border-radius: 6px;
-            font-family: Consolas, monospace;
-            margin: 6px 0;
-            white-space: pre;
-            overflow-x: auto;
-            line-height: 1.3;
+            background-color: #F6F8FA;
+            padding: 16pt;
+            border: 1pt solid #E1E4E8;
+            border-radius: 4pt;
+            font-family: "Consolas", monospace;
+            font-size: 12pt;
+            margin: 12pt 0;
+            white-space: pre-wrap;
+            line-height: 1.45;
+            page-break-inside: avoid;
           }
-          h1, h2, h3, h4, h5, h6 {
-            color: #111827;
-            margin: 0.6em 0 0.3em;
-            line-height: 1.3;
+          code {
+            font-family: inherit;
+          }
+          .heading-1 {
+            font-size: 22pt;
             font-weight: bold;
+            margin: 28pt 0 14pt;
+            color: #000000;
+            font-family: "Calibri Light", sans-serif;
+            page-break-after: avoid;
           }
-          p { margin: 0.1em 0; }
+          .heading-2 {
+            font-size: 18pt;
+            font-weight: bold;
+            margin: 24pt 0 12pt;
+            color: #000000;
+            font-family: "Calibri Light", sans-serif;
+            page-break-after: avoid;
+          }
+          .heading-3 {
+            font-size: 16pt;
+            font-weight: bold;
+            margin: 20pt 0 10pt;
+            color: #000000;
+            font-family: "Calibri Light", sans-serif;
+            page-break-after: avoid;
+          }
+          .paragraph {
+            margin: 0 0 10pt;
+            line-height: 1.6;
+          }
+          /* 避免代码块在页面中间断开 */
+          pre { page-break-inside: avoid; }
+          /* 避免标题在页面底部 */
+          h1, h2, h3 { page-break-after: avoid; }
+          /* 确保段落不会在页面顶部孤立 */
+          p { orphans: 2; widows: 2; }
         </style>
       </head>
       <body>
