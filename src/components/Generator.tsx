@@ -1,4 +1,4 @@
-import { Index, Show, createEffect, createRef, createSignal, onCleanup, onMount } from 'solid-js'
+import { Index, Show, createEffect, createSignal, onCleanup, onMount } from 'solid-js'
 import { useThrottleFn } from 'solidjs-use'
 import { saveAs } from 'file-saver'
 import { useState } from 'react'
@@ -255,17 +255,19 @@ export default () => {
     const lines = content.split('\n')
     let outline = ''
 
-    // Use the first question as the title
-    outline += `# ${firstQuestion() || 'Outline'}\n\n`
+    // 使用第一个 MessageItem 的第一行文字作为标题
+    const firstMessageContent = messageList().length > 0 ? messageList()[0].content : ''
+    const firstLineOfMessage = firstMessageContent.split('\n')[0] || 'Outline'
+    outline += `# ${firstLineOfMessage}\n\n`
 
     lines.forEach((line) => {
-      if (line.startsWith('#')) { // Check for headers
-        const level = line.match(/^#+/)[0].length // Determine header level
-        outline += `${'  '.repeat(level - 1)}- ${line.replace(/^#+\s*/, '')}\n` // Format outline
+      if (line.startsWith('#')) {
+        const level = line.match(/^#+/)[0].length
+        outline += `${'  '.repeat(level - 1)}- ${line.replace(/^#+\s*/, '')}\n`
       }
     })
 
-    return outline.trim() // Return the formatted outline
+    return outline.trim()
   }
 
   const handleSearch = (text: string) => {
@@ -283,6 +285,7 @@ export default () => {
               : ''
             )
           }
+          title={messageList().length > 0 ? messageList()[0].content.split('\n')[0] : '大纲'}
         />
       )}
       <div my-6>
