@@ -218,7 +218,7 @@ export default () => {
 
         if (line.startsWith('```')) {
           if (isInCodeBlock) {
-            content += '</pre>'
+            content += '</code></pre>'
           } else {
             codeLanguage = line.slice(3).trim()
             content += `<pre class="code-block ${codeLanguage}"><code class="language-${codeLanguage}">`
@@ -228,10 +228,16 @@ export default () => {
           const level = line.match(/^#+/)[0].length
           content += `<h${level} class="heading-${level}">${line.replace(/^#+\s*/, '')}</h${level}>`
         } else {
-          if (isInCodeBlock)
-            content += `${line}\n`
-          else if (line.trim())
+          if (isInCodeBlock) {
+            const escapedLine = line
+              .replace(/&/g, '&amp;')
+              .replace(/</g, '&lt;')
+              .replace(/>/g, '&gt;')
+              .replace(/\t/g, '    ')
+            content += `${escapedLine}\n`
+          } else if (line.trim()) {
             content += `<p class="paragraph">${line}</p>`
+          }
         }
       })
 
@@ -253,74 +259,73 @@ export default () => {
             margin: 2.54cm 3.18cm;
           }
           body { 
-            font-family: "Calibri", sans-serif;
-            font-size: 12pt;
-            line-height: 1.5;
+            font-family: "Segoe UI", sans-serif;
+            font-size: 11pt;
+            line-height: 1.4;
             max-width: 100%;
             margin: 0 auto;
             padding: 0;
             word-wrap: break-word;
+            color: #333;
           }
           .main-title {
             text-align: center;
-            font-size: 26pt;
+            font-size: 24pt;
             font-weight: bold;
-            margin: 26pt 0;
-            color: #000000;
-            font-family: "Calibri Light", sans-serif;
+            margin: 20pt 0;
+            color: #2C3E50;
+            font-family: "Segoe UI Light", sans-serif;
           }
           .message-content { 
-            color: #000000;
+            color: #333;
             margin: 0;
           }
           .code-block { 
-            background-color: #F6F8FA;
-            padding: 16pt;
-            border: 1pt solid #E1E4E8;
+            background-color: #F3F4F6;
+            padding: 12pt;
+            border: 1pt solid #D1D5DB;
             border-radius: 4pt;
             font-family: "Consolas", monospace;
-            font-size: 12pt;
-            margin: 12pt 0;
+            font-size: 11pt;
+            margin: 8pt 0;
             white-space: pre-wrap;
-            line-height: 1.45;
+            line-height: 1.4;
             page-break-inside: avoid;
           }
           code {
             font-family: inherit;
+            display: block;
           }
           .heading-1 {
-            font-size: 22pt;
+            font-size: 20pt;
             font-weight: bold;
-            margin: 28pt 0 14pt;
-            color: #000000;
-            font-family: "Calibri Light", sans-serif;
+            margin: 20pt 0 10pt;
+            color: #2C3E50;
+            font-family: "Segoe UI Light", sans-serif;
             page-break-after: avoid;
           }
           .heading-2 {
-            font-size: 18pt;
+            font-size: 16pt;
             font-weight: bold;
-            margin: 24pt 0 12pt;
-            color: #000000;
-            font-family: "Calibri Light", sans-serif;
+            margin: 16pt 0 8pt;
+            color: #2C3E50;
+            font-family: "Segoe UI Light", sans-serif;
             page-break-after: avoid;
           }
           .heading-3 {
-            font-size: 16pt;
+            font-size: 14pt;
             font-weight: bold;
-            margin: 20pt 0 10pt;
-            color: #000000;
-            font-family: "Calibri Light", sans-serif;
+            margin: 12pt 0 6pt;
+            color: #2C3E50;
+            font-family: "Segoe UI Light", sans-serif;
             page-break-after: avoid;
           }
           .paragraph {
-            margin: 0 0 10pt;
-            line-height: 1.6;
+            margin: 0 0 6pt;
+            line-height: 1.5;
           }
-          /* 避免代码块在页面中间断开 */
           pre { page-break-inside: avoid; }
-          /* 避免标题在页面底部 */
           h1, h2, h3 { page-break-after: avoid; }
-          /* 确保段落不会在页面顶部孤立 */
           p { orphans: 2; widows: 2; }
         </style>
       </head>
