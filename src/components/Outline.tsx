@@ -1,4 +1,4 @@
-import { For, createEffect, createSignal } from 'solid-js'
+import { For, createEffect, createSignal, onMount } from 'solid-js'
 
 interface OutlineItem {
   level: number
@@ -12,7 +12,12 @@ interface OutlineProps {
 
 export const Outline = (props: OutlineProps) => {
   const [outline, setOutline] = createSignal<OutlineItem[]>([])
-  const [isOpen, setIsOpen] = createSignal(true)
+  const [isOpen, setIsOpen] = createSignal(false)
+
+  onMount(() => {
+    // PC 端默认展开，移动端默认收起
+    setIsOpen(window.innerWidth >= 768)
+  })
 
   createEffect(() => {
     // 解析markdown文本，提取标题

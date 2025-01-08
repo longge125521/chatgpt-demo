@@ -79,7 +79,7 @@ export default ({ role, message, showRetry = () => false, onRetry }: Props) => {
   }
 
   return (
-    <div class="py-2 -mx-4 px-4 transition-colors md:hover:bg-slate/3 w-full max-w-screen-xl mx-auto pr-[10rem]">
+    <div class="py-2 -mx-4 px-4 transition-colors md:hover:bg-slate/3 w-full max-w-screen-xl mx-auto md:pr-[10rem]">
       <div class="rounded-lg" class:op-75={role === 'user'}>
         <div
           class="message prose prose-slate dark:prose-invert dark:text-slate break-words overflow-hidden max-w-none"
