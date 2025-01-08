@@ -22,9 +22,6 @@ export default () => {
   const [temperature, setTemperature] = createSignal(0.6)
   const temperatureSetting = (value: number) => { setTemperature(value) }
   const maxHistoryMessages = parseInt(import.meta.env.PUBLIC_MAX_HISTORY_MESSAGES || '9')
-  const [firstQuestion, setFirstQuestion] = createSignal('')
-  const [searchText, setSearchText] = createSignal('')
-  const [fileName, setFileName] = createSignal('')
 
   createEffect(() => (isStick() && smoothToBottom()))
 
@@ -66,9 +63,6 @@ export default () => {
     const inputValue = inputRef.value
     if (!inputValue)
       return
-
-    if (!firstQuestion())
-      setFirstQuestion(inputValue)
 
     inputRef.value = ''
     setMessageList([
@@ -234,19 +228,18 @@ export default () => {
   }
 
   const exportToMarkdown = () => {
-    const contentElement = document.querySelector('.relative')
-    const content = contentElement ? contentElement.innerText : ''
+    // 使用消息列表来构建 markdown 内容
+    const messages = messageList().map(msg => msg.content).join('\n\n')
 
-    // Remove unwanted text (e.g., "Copy")
-    const cleanedContent = content.replace(/Copy/g, '').trim()
+    // 生成大纲
+    const outline = generateOutline(messages)
 
-    // Ensure cleanedContent is not empty before generating outline
-    const outline = cleanedContent ? generateOutline(cleanedContent) : ''
-    const markdownContent = `${outline}\n\n${cleanedContent}`
+    // 保留原始消息内容，而不是大纲
+    const markdownContent = messages
+
+    // 创建并下载文件
     const blob = new Blob([markdownContent], { type: 'text/markdown' })
-
-    // Use the first MessageItem's content as the file name
-    const firstMessage = messageList().length > 0 ? messageList()[0].content : 'exported_document'
+    const firstMessage = messageList().length > 0 ? messageList()[0].content.split('\n')[0] : 'exported_document'
     saveAs(blob, `${firstMessage || 'exported_document'}.md`)
   }
 
@@ -259,19 +252,22 @@ export default () => {
     const firstLineOfMessage = firstMessageContent.split('\n')[0] || 'Outline'
     outline += `# ${firstLineOfMessage}\n\n`
 
+    // 处理每一行
     lines.forEach((line) => {
-      if (line.startsWith('#')) {
-        const level = line.match(/^#+/)[0].length
-        outline += `${'  '.repeat(level - 1)}- ${line.replace(/^#+\s*/, '')}\n`
+      const trimmedLine = line.trim()
+      if (trimmedLine) {
+        if (line.startsWith('#')) {
+          // 如果是标题，保持原有层级
+          const level = line.match(/^#+/)[0].length
+          outline += `${'  '.repeat(level - 1)}- ${line.replace(/^#+\s*/, '')}\n`
+        } else if (!line.startsWith('```')) {
+          // 如果不是代码块标记，作为二级标题
+          outline += `  - ${trimmedLine}\n`
+        }
       }
     })
 
-    return outline.trim()
-  }
-
-  const handleSearch = (text: string) => {
-    setSearchText(text)
-    setFileName(text || inputRef.value.split('\n')[0] || '')
+    return outline
   }
 
   return (
