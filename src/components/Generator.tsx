@@ -263,9 +263,9 @@ export default () => {
           }
           .main-title {
             text-align: center;
-            font-size: 28pt;
+            font-size: 26pt;
             font-weight: bold;
-            margin: 28pt 0;
+            margin: 26pt 0;
             color: #000000;
             font-family: "Calibri Light", sans-serif;
           }
@@ -337,19 +337,24 @@ export default () => {
   }
 
   const exportToMarkdown = () => {
-    // 使用消息列表来构建 markdown 内容
-    const messages = messageList().map(msg => msg.content).join('\n\n')
+    // 获取第一行作为标题
+    const mainTitle = messageList().length > 0 ? messageList()[0].content.split('\n')[0] : 'Document'
 
-    // 生成大纲
-    const outline = generateOutline(messages)
+    // 使用消息列表来构建 markdown 内容，跳过第一条消息的第一行
+    const messages = messageList().map((msg, index) => {
+      const lines = msg.content.split('\n')
+      // 如果是第一条消息，跳过第一行
+      if (index === 0)
+        return lines.slice(1).join('\n')
+      return msg.content
+    }).join('\n\n')
 
-    // 保留原始消息内容，而不是大纲
-    const markdownContent = messages
+    // 使用纯 Markdown 语法创建居中的标题
+    const markdownContent = `# ${mainTitle}\n\n${messages}`
 
     // 创建并下载文件
     const blob = new Blob([markdownContent], { type: 'text/markdown' })
-    const firstMessage = messageList().length > 0 ? messageList()[0].content.split('\n')[0] : 'exported_document'
-    saveAs(blob, `${firstMessage || 'exported_document'}.md`)
+    saveAs(blob, `${mainTitle || 'exported_document'}.md`)
   }
 
   const generateOutline = (content: string) => {
