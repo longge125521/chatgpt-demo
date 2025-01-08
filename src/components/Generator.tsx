@@ -205,26 +205,98 @@ export default () => {
   }
 
   const exportToWord = () => {
-    const contentElement = document.querySelector('.relative')
-    const content = contentElement ? contentElement.innerHTML : ''
+    const mainTitle = messageList().length > 0 ? messageList()[0].content.split('\n')[0] : 'Document'
+    const messages = messageList().map((msg, index) => {
+      let content = ''
+      let isInCodeBlock = false
+      let codeLanguage = ''
 
-    // Remove unwanted text (e.g., "Copy")
-    const cleanedContent = content.replace(/Copy/g, '').trim()
+      const lines = msg.content.split('\n')
+      lines.forEach((line, lineIndex) => {
+        if (index === 0 && lineIndex === 0)
+          return
 
-    // Create a Blob for the Word file and trigger download
-    const blob = new Blob([`
-      <html>
-        <head>
-          <meta charset="utf-8">
-          <title>Exported Document</title>
-        </head>
-        <body>${cleanedContent}</body>
-      </html>
-    `], { type: 'application/msword' })
+        if (line.startsWith('```')) {
+          if (isInCodeBlock) {
+            content += '</pre>'
+          } else {
+            codeLanguage = line.slice(3).trim()
+            content += `<pre class="code-block ${codeLanguage}">`
+          }
+          isInCodeBlock = !isInCodeBlock
+        } else if (line.startsWith('#')) {
+          const level = line.match(/^#+/)[0].length
+          content += `<h${level}>${line.replace(/^#+\s*/, '')}</h${level}>`
+        } else {
+          if (isInCodeBlock)
+            content += `${line}\n`
+          else if (line.trim())
+            content += `<p>${line}</p>`
+        }
+      })
 
-    // Use the first MessageItem's content as the file name
-    const firstMessage = messageList().length > 0 ? messageList()[0].content : 'exported_document'
-    saveAs(blob, `${firstMessage || 'exported_document'}.doc`)
+      if (isInCodeBlock)
+        content += '</pre>'
+
+      return `<div class="message-content">${content}</div>`
+    }).join('')
+
+    const blob = new Blob([`<html xmlns:w="urn:schemas-microsoft-com:office:word">
+      <head>
+        <meta charset="utf-8">
+        <title>Exported Document</title>
+        <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+        <?mso-application progid="Word.Document"?>
+        <style>
+          body { 
+            font-family: Arial, sans-serif; 
+            line-height: 1.3;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+          }
+          .main-title {
+            text-align: center;
+            font-size: 1.8em;
+            font-weight: bold;
+            margin: 0.8em auto;
+            padding-bottom: 0.3em;
+            border-bottom: 2px solid #4B5563;
+            color: #111827;
+          }
+          .message-content { 
+            color: #374151;
+            margin-bottom: 10px;
+          }
+          .code-block { 
+            background-color: #f6f6f6;
+            padding: 10px;
+            border-radius: 6px;
+            font-family: Consolas, monospace;
+            margin: 6px 0;
+            white-space: pre;
+            overflow-x: auto;
+            line-height: 1.3;
+          }
+          h1, h2, h3, h4, h5, h6 {
+            color: #111827;
+            margin: 0.6em 0 0.3em;
+            line-height: 1.3;
+            font-weight: bold;
+          }
+          p { margin: 0.1em 0; }
+        </style>
+      </head>
+      <body>
+        <h1 class="main-title">${mainTitle}</h1>
+        ${messages}
+      </body>
+    </html>`], {
+      type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    })
+
+    const firstMessage = messageList().length > 0 ? messageList()[0].content.split('\n')[0] : 'exported_document'
+    saveAs(blob, `${firstMessage || 'exported_document'}.docx`)
   }
 
   const exportToMarkdown = () => {
