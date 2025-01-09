@@ -248,31 +248,32 @@ export default () => {
     const blob = new Blob([`<html xmlns:w="urn:schemas-microsoft-com:office:word">
       <head>
         <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
         <title>Exported Document</title>
         <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
         <?mso-application progid="Word.Document"?>
         <style>
           @page {
             size: A4;
-            margin: 2.54cm 3.18cm;
+            margin: 2.5cm;
           }
           body { 
-            font-family: "Segoe UI", sans-serif;
+            font-family: 'Aptos', sans-serif;
             font-size: 12pt;
-            line-height: 1.4;
+            line-height: 1.6;
             max-width: 100%;
-            margin: 0 auto;
+            margin: auto;
             padding: 0;
             word-wrap: break-word;
             color: #333;
           }
           .main-title {
             text-align: center;
-            font-size: 26pt;
+            font-family: 'Aptos Light', sans-serif;
+            font-size: 20pt;
             font-weight: bold;
             margin: 20pt 0;
             color: #2C3E50;
-            font-family: "Segoe UI Light", sans-serif;
           }
           .message-content { 
             color: #333;
@@ -283,50 +284,54 @@ export default () => {
             padding: 12pt;
             border: 1pt solid #D1D5DB;
             border-radius: 4pt;
-            font-family: "Consolas", monospace;
-            font-size: 12pt;
+            font-family: 'Consolas', monospace;
+            font-size: 11pt;
             margin: 8pt 0;
             white-space: pre-wrap;
             line-height: 1.4;
             page-break-inside: avoid;
           }
           code {
-            font-family: inherit;
-            display: block;
+            font-family: 'Consolas', monospace;
             font-size: 11pt;
+            display: block;
           }
           .heading-1 {
+            font-family: 'Aptos Light', sans-serif;
             font-size: 20pt;
             font-weight: bold;
             margin: 20pt 0 10pt;
             color: #2C3E50;
-            font-family: "Segoe UI Light", sans-serif;
             page-break-after: avoid;
           }
           .heading-2 {
+            font-family: 'Aptos Light', sans-serif;
             font-size: 16pt;
             font-weight: bold;
             margin: 16pt 0 8pt;
             color: #2C3E50;
-            font-family: "Segoe UI Light", sans-serif;
             page-break-after: avoid;
           }
           .heading-3 {
+            font-family: 'Aptos Light', sans-serif;
             font-size: 14pt;
             font-weight: bold;
             margin: 12pt 0 6pt;
             color: #2C3E50;
-            font-family: "Segoe UI Light", sans-serif;
             page-break-after: avoid;
           }
           .paragraph {
-            margin: 0 0 6pt;
-            line-height: 1.5;
+            margin: 0 0 12pt;
           }
           pre { page-break-inside: avoid; }
           h1, h2, h3 { page-break-after: avoid; }
           p { orphans: 2; widows: 2; }
         </style>
+        <script type="text/javascript">
+          window.onload = function() {
+            document.body.style.zoom = "100%"; // 设置默认缩放
+          }
+        </script>
       </head>
       <body>
         <h1 class="main-title">${mainTitle}</h1>
