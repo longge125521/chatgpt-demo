@@ -258,7 +258,7 @@ export default () => {
             margin: 2.5cm;
           }
           body { 
-            font-family: 'Aptos', sans-serif;
+            font-family: 'Arial', sans-serif;
             font-size: 12pt;
             line-height: 1.6;
             max-width: 100%;
@@ -269,7 +269,7 @@ export default () => {
           }
           .main-title {
             text-align: center;
-            font-family: 'Aptos Light', sans-serif;
+            font-family: 'Arial', sans-serif;
             font-size: 20pt;
             font-weight: bold;
             margin: 20pt 0;
@@ -284,7 +284,7 @@ export default () => {
             padding: 12pt;
             border: 1pt solid #D1D5DB;
             border-radius: 4pt;
-            font-family: 'Consolas', monospace;
+            font-family: 'Courier New', monospace;
             font-size: 11pt;
             margin: 8pt 0;
             white-space: pre-wrap;
@@ -292,12 +292,12 @@ export default () => {
             page-break-inside: avoid;
           }
           code {
-            font-family: 'Consolas', monospace;
+            font-family: 'Courier New', monospace;
             font-size: 11pt;
             display: block;
           }
           .heading-1 {
-            font-family: 'Aptos Light', sans-serif;
+            font-family: 'Arial', sans-serif;
             font-size: 20pt;
             font-weight: bold;
             margin: 20pt 0 10pt;
@@ -305,7 +305,7 @@ export default () => {
             page-break-after: avoid;
           }
           .heading-2 {
-            font-family: 'Aptos Light', sans-serif;
+            font-family: 'Arial', sans-serif;
             font-size: 16pt;
             font-weight: bold;
             margin: 16pt 0 8pt;
@@ -313,7 +313,7 @@ export default () => {
             page-break-after: avoid;
           }
           .heading-3 {
-            font-family: 'Aptos Light', sans-serif;
+            font-family: 'Arial', sans-serif;
             font-size: 14pt;
             font-weight: bold;
             margin: 12pt 0 6pt;
