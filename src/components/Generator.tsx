@@ -9,6 +9,20 @@ import ErrorMessageItem from './ErrorMessageItem'
 import { Outline } from './Outline'
 import type { ChatMessage, ErrorMessage } from '@/types'
 
+// 动态导入以避免SSR问题
+let jsPDF: any
+let html2canvas: any
+
+if (typeof window !== 'undefined') {
+  Promise.all([
+    import('jspdf'),
+    import('html2canvas'),
+  ]).then(([jsPDFModule, html2canvasModule]) => {
+    jsPDF = jsPDFModule.default
+    html2canvas = html2canvasModule.default
+  })
+}
+
 export default () => {
   let inputRef: HTMLTextAreaElement
   const [currentSystemRoleSettings, setCurrentSystemRoleSettings] = createSignal('')
@@ -367,6 +381,130 @@ export default () => {
     saveAs(blob, `${mainTitle || 'exported_document'}.md`)
   }
 
+  const exportToPDF = async() => {
+    if (!jsPDF) {
+      console.error('PDF export modules not loaded')
+      return
+    }
+
+    const mainTitle = messageList().length > 0 ? messageList()[0].content.split('\n')[0] : 'Document'
+
+    // 创建 PDF 实例时添加中文字体支持
+    const pdf = new jsPDF({
+      orientation: 'portrait',
+      unit: 'pt',
+      format: 'a4',
+      putOnlyUsedFonts: true,
+    })
+
+    // 添加中文字体支持
+    await pdf.addFont('/fonts/NotoSansSC-Regular.ttf', 'NotoSans', 'normal')
+    pdf.setFont('NotoSans')
+
+    // 设置字体大小和颜色
+    const titleSize = 24
+    const normalSize = 12
+    const codeSize = 11 // 稍微调大代码字体
+
+    // 修改代码块的样式
+    const codeBlockBgColor = 245 // 稍微调亮背景色
+    const codeTextColor = {
+      r: 40,
+      g: 42,
+      b: 54,
+    }
+    const codePadding = 20
+
+    // 设置初始 y 坐标
+    let y = 40
+
+    // 添加标题
+    pdf.setFontSize(titleSize)
+    pdf.text(mainTitle, 40, y)
+    y += titleSize + 20
+
+    // 遍历消息
+    messageList().forEach((msg) => {
+      pdf.setFontSize(normalSize)
+      let isInCodeBlock = false
+
+      const lines = msg.content.split('\n')
+      lines.forEach((line) => {
+        // 跳过第一条消息的标题
+        if (msg === messageList()[0] && line === lines[0])
+          return
+
+        if (line.startsWith('```')) {
+          isInCodeBlock = !isInCodeBlock
+          if (!isInCodeBlock) {
+            y += 15 // 增加代码块结束后的间距
+            pdf.setFontSize(normalSize)
+            pdf.setTextColor(0, 0, 0)
+          } else {
+            // 添加代码块背景
+            pdf.setFillColor(codeBlockBgColor)
+            pdf.rect(30, y - 5, 535, 2, 'F') // 上边框
+            y += codePadding // 代码块开始前的内边距
+            pdf.setFontSize(codeSize)
+            pdf.setTextColor(codeTextColor.r, codeTextColor.g, codeTextColor.b)
+          }
+          return
+        }
+
+        if (line.startsWith('#') && !isInCodeBlock) {
+          // 标题处理
+          const level = line.match(/^#+/)[0].length
+          pdf.setFontSize(titleSize - (level * 2))
+          pdf.setTextColor(0, 0, 0)
+          line = line.replace(/^#+\s*/, '')
+        } else if (!isInCodeBlock) {
+          // 普通文本
+          pdf.setFontSize(normalSize)
+          pdf.setTextColor(0, 0, 0)
+        }
+
+        // 检查是否需要新页
+        if (y > 780) {
+          pdf.addPage()
+          y = 40
+          // 如果在代码块内换页，需要重新设置代码块样式
+          if (isInCodeBlock) {
+            pdf.setFillColor(codeBlockBgColor)
+            pdf.rect(30, y - 5, 535, 2, 'F')
+            y += codePadding
+            pdf.setFontSize(codeSize)
+            pdf.setTextColor(codeTextColor.r, codeTextColor.g, codeTextColor.b)
+          }
+        }
+
+        // 处理长文本自动换行
+        const textLines = pdf.splitTextToSize(line, 520)
+        textLines.forEach((textLine: string) => {
+          if (isInCodeBlock) {
+            // 只添加背景，移除左侧边框
+            pdf.setFillColor(codeBlockBgColor)
+            pdf.rect(30, y - 5, 535, pdf.getFontSize() * 1.5, 'F')
+            // 设置回文本颜色
+            pdf.setTextColor(codeTextColor.r, codeTextColor.g, codeTextColor.b)
+          }
+          pdf.text(textLine, 40, y)
+          y += (pdf.getFontSize() * 1.5)
+        })
+      })
+
+      // 如果代码块没有正确结束，添加结束样式
+      if (isInCodeBlock) {
+        pdf.setFillColor(codeBlockBgColor)
+        pdf.rect(30, y - 5, 535, 2, 'F') // 下边框
+      }
+
+      // 消息之间添加间距
+      y += 20
+    })
+
+    pdf.save(`${mainTitle || 'exported_document'}.pdf`)
+  }
+
   const generateOutline = (content: string) => {
     const lines = content.split('\n')
     let outline = ''
@@ -478,6 +616,9 @@ export default () => {
           </button>
           <button onClick={exportToMarkdown} class="export-button">
             <img src="/md-icon.svg" alt="Export to Markdown" class="icon" />
+          </button>
+          <button onClick={exportToPDF} class="export-button">
+            <img src="/pdf-icon.svg" alt="Export to PDF" class="icon" />
           </button>
         </div>
       </div>
