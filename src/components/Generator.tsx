@@ -389,7 +389,7 @@ export default () => {
 
     const mainTitle = messageList().length > 0 ? messageList()[0].content.split('\n')[0] : 'Document'
 
-    // 创建 PDF 实例时添加中文字体支持
+    // 创建 PDF 实例
     const pdf = new jsPDF({
       orientation: 'portrait',
       unit: 'pt',
@@ -404,23 +404,39 @@ export default () => {
     // 设置字体大小和颜色
     const titleSize = 24
     const normalSize = 12
-    const codeSize = 11 // 稍微调大代码字体
+    const codeSize = 11
 
     // 修改代码块的样式
-    const codeBlockBgColor = 245 // 稍微调亮背景色
+    const codeBlockBgColor = 245
     const codeTextColor = {
       r: 40,
       g: 42,
       b: 54,
     }
-    const codePadding = 20
+    const codePadding = {
+      top: 0, // 代码块顶部内边距
+      bottom: 0, // 代码块底部内边距
+      left: 15, // 代码文本左边距
+      right: 15, // 代码文本右边距
+    }
+    const codeLineHeight = 1.6
+    const codeBlockMargin = 10 // 代码块与其他内容的间距
+
+    // 用于存储大纲和页码的数组
+    const outlineItems = []
+    let currentPage = 1
 
     // 设置初始 y 坐标
     let y = 40
 
-    // 添加标题
+    // 添加标题并记录到大纲
     pdf.setFontSize(titleSize)
     pdf.text(mainTitle, 40, y)
+    outlineItems.push({
+      title: mainTitle,
+      page: currentPage,
+      y,
+    })
     y += titleSize + 20
 
     // 遍历消息
@@ -437,14 +453,14 @@ export default () => {
         if (line.startsWith('```')) {
           isInCodeBlock = !isInCodeBlock
           if (!isInCodeBlock) {
-            y += 15 // 增加代码块结束后的间距
+            y += codePadding.bottom + codeBlockMargin // 代码块结束后的间距
             pdf.setFontSize(normalSize)
             pdf.setTextColor(0, 0, 0)
           } else {
-            // 添加代码块背景
+            y += codeBlockMargin // 代码块开始前的间距
             pdf.setFillColor(codeBlockBgColor)
-            pdf.rect(30, y - 5, 535, 2, 'F') // 上边框
-            y += codePadding // 代码块开始前的内边距
+            pdf.rect(30, y - codePadding.top, 535, 2, 'F') // 上边框
+            y += codePadding.top // 代码块开始前的内边距
             pdf.setFontSize(codeSize)
             pdf.setTextColor(codeTextColor.r, codeTextColor.g, codeTextColor.b)
           }
@@ -454,11 +470,18 @@ export default () => {
         if (line.startsWith('#') && !isInCodeBlock) {
           // 标题处理
           const level = line.match(/^#+/)[0].length
+          const titleText = line.replace(/^#+\s*/, '')
           pdf.setFontSize(titleSize - (level * 2))
           pdf.setTextColor(0, 0, 0)
-          line = line.replace(/^#+\s*/, '')
+          // 记录标题到大纲
+          outlineItems.push({
+            title: titleText,
+            level,
+            page: currentPage,
+            y,
+          })
+          line = titleText
         } else if (!isInCodeBlock) {
-          // 普通文本
           pdf.setFontSize(normalSize)
           pdf.setTextColor(0, 0, 0)
         }
@@ -466,40 +489,66 @@ export default () => {
         // 检查是否需要新页
         if (y > 780) {
           pdf.addPage()
+          currentPage++
           y = 40
-          // 如果在代码块内换页，需要重新设置代码块样式
           if (isInCodeBlock) {
             pdf.setFillColor(codeBlockBgColor)
-            pdf.rect(30, y - 5, 535, 2, 'F')
-            y += codePadding
+            pdf.rect(30, y - codePadding.top, 535, 2, 'F')
+            y += codePadding.top
             pdf.setFontSize(codeSize)
             pdf.setTextColor(codeTextColor.r, codeTextColor.g, codeTextColor.b)
           }
         }
 
         // 处理长文本自动换行
-        const textLines = pdf.splitTextToSize(line, 520)
+        const textLines = pdf.splitTextToSize(line, isInCodeBlock ? 490 : 520) // 代码块左右留出更多空间
         textLines.forEach((textLine: string) => {
           if (isInCodeBlock) {
-            // 只添加背景，移除左侧边框
+            const lineHeight = pdf.getFontSize() * codeLineHeight
             pdf.setFillColor(codeBlockBgColor)
-            pdf.rect(30, y - 5, 535, pdf.getFontSize() * 1.5, 'F')
-            // 设置回文本颜色
+            pdf.rect(
+              30, // x坐标
+              y - (lineHeight * 1.0), // 上移距离
+              535, // 宽度
+              lineHeight * 1.7, // 高度
+              'F',
+            )
             pdf.setTextColor(codeTextColor.r, codeTextColor.g, codeTextColor.b)
           }
-          pdf.text(textLine, 40, y)
-          y += (pdf.getFontSize() * 1.5)
+          pdf.text(textLine, isInCodeBlock ? 40 + codePadding.left : 40, y - 3)
+          y += (pdf.getFontSize() * codeLineHeight)
         })
       })
 
-      // 如果代码块没有正确结束，添加结束样式
       if (isInCodeBlock) {
         pdf.setFillColor(codeBlockBgColor)
         pdf.rect(30, y - 5, 535, 2, 'F') // 下边框
       }
 
-      // 消息之间添加间距
       y += 20
+    })
+
+    // 在文档开头添加大纲页
+    pdf.insertPage(1)
+    y = 40
+    pdf.setFontSize(titleSize)
+    pdf.text('目录', 40, y)
+    y += titleSize + 20
+
+    pdf.setFontSize(normalSize)
+    outlineItems.forEach((item) => {
+      if (y > 780) {
+        pdf.addPage()
+        y = 40
+      }
+      const indent = item.level ? (item.level - 1) * 20 : 0
+      const text = `${item.title}`
+      pdf.setTextColor(0, 0, 238) // 使用蓝色表示链接
+      pdf.textWithLink(text, 40 + indent, y, {
+        pageNumber: item.page + 1, // +1 因为插入了目录页
+        y: item.y,
+      })
+      y += normalSize * 1.5
     })
 
     pdf.save(`${mainTitle || 'exported_document'}.pdf`)
