@@ -495,6 +495,16 @@ export default () => {
           return
         }
 
+        // 处理 Markdown 标题
+        if (line.startsWith('**') && line.endsWith('**')) {
+          const titleText = line.replace(/^\*\*|\*\*$/g, '')
+          pdf.setFontSize(titleSize - 4) // 使用小一点的标题字号
+          pdf.setTextColor(50, 50, 50) // 标题使用深灰色
+          pdf.text(titleText, 40, y - 3)
+          y += (pdf.getFontSize() * 1.5) // 增加 y 坐标
+          return
+        }
+
         if (line.startsWith('#') && !isInCodeBlock) {
           // 标题处理
           const level = line.match(/^#+/)[0].length
