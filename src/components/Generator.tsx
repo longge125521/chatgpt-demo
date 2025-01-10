@@ -364,13 +364,37 @@ export default () => {
     // 获取第一行作为标题
     const mainTitle = messageList().length > 0 ? messageList()[0].content.split('\n')[0] : 'Document'
 
-    // 使用消息列表来构建 markdown 内容，跳过第一条消息的第一行
+    // 使用消息列表来构建 markdown 内容，处理配置文件格式
     const messages = messageList().map((msg, index) => {
       const lines = msg.content.split('\n')
-      // 如果是第一条消息，跳过第一行
-      if (index === 0)
-        return lines.slice(1).join('\n')
-      return msg.content
+      // 处理每一行
+      const formattedLines = lines.map((line, lineIndex) => {
+        // 如果是第一条消息的第一行，跳过
+        if (index === 0 && lineIndex === 0)
+          return null
+
+        // 检查是否在代码块内
+        if (line.startsWith('```'))
+          return line
+
+        // 处理配置文件标题（被 ** 包围的行）
+        if (line.startsWith('**') && line.endsWith('**')) {
+          const title = line.replace(/^\*\*|\*\*$/g, '')
+          return `### ${title}`
+        }
+
+        // 处理配置项（key: value 格式）
+        if (line.includes(':') && !line.includes(' :')) {
+          // 计算缩进级别
+          const indentLevel = line.match(/^\s*/)[0].length / 2
+          const indent = '  '.repeat(indentLevel)
+          return `${indent}${line}`
+        }
+
+        return line
+      }).filter(Boolean) // 移除 null 值
+
+      return formattedLines.join('\n')
     }).join('\n\n')
 
     // 使用纯 Markdown 语法创建居中的标题
@@ -414,7 +438,7 @@ export default () => {
       b: 54,
     }
     const codePadding = {
-      top: 0, // 代码块顶部内边距
+      top: 15, // 代码块顶部内边距
       bottom: 0, // 代码块底部内边距
       left: 15, // 代码文本左边距
       right: 15, // 代码文本右边距
@@ -431,7 +455,11 @@ export default () => {
 
     // 添加标题并记录到大纲
     pdf.setFontSize(titleSize)
-    pdf.text(mainTitle, 40, y)
+    // 计算文本宽度来居中显示
+    const titleWidth = pdf.getTextWidth(mainTitle)
+    const pageWidth = 595 // A4纸的宽度(pt)
+    const titleX = (pageWidth - titleWidth) / 2 // 居中的X坐标
+    pdf.text(mainTitle, titleX, y)
     outlineItems.push({
       title: mainTitle,
       page: currentPage,
@@ -459,7 +487,7 @@ export default () => {
           } else {
             y += codeBlockMargin // 代码块开始前的间距
             pdf.setFillColor(codeBlockBgColor)
-            pdf.rect(30, y - codePadding.top, 535, 2, 'F') // 上边框
+            pdf.rect(30, y - codePadding.top, 535, codePadding.top + 1, 'F') // 上边框
             y += codePadding.top // 代码块开始前的内边距
             pdf.setFontSize(codeSize)
             pdf.setTextColor(codeTextColor.r, codeTextColor.g, codeTextColor.b)
@@ -493,7 +521,7 @@ export default () => {
           y = 40
           if (isInCodeBlock) {
             pdf.setFillColor(codeBlockBgColor)
-            pdf.rect(30, y - codePadding.top, 535, 2, 'F')
+            pdf.rect(30, y - codePadding.top, 535, codePadding.top + 1, 'F')
             y += codePadding.top
             pdf.setFontSize(codeSize)
             pdf.setTextColor(codeTextColor.r, codeTextColor.g, codeTextColor.b)
@@ -506,23 +534,64 @@ export default () => {
           if (isInCodeBlock) {
             const lineHeight = pdf.getFontSize() * codeLineHeight
             pdf.setFillColor(codeBlockBgColor)
+
+            // 检查是否是配置文件格式
+            const isConfigFile = textLine.includes(':') && !textLine.includes(' :')
+            // 检查是否是配置文件标题行（被 ** 包围的行）
+            const isConfigTitle = textLine.startsWith('**') && textLine.endsWith('**')
+
+            // 计算缩进级别（用于配置文件）
+            const indentLevel = textLine.match(/^\s*/)[0].length / 2
+            const configIndent = isConfigFile ? indentLevel * 20 : 0
+
             pdf.rect(
-              30, // x坐标
-              y - (lineHeight * 1.0), // 上移距离
-              535, // 宽度
-              lineHeight * 1.7, // 高度
+              30,
+              y - (lineHeight * 0.8),
+              535,
+              lineHeight * 1.8,
               'F',
             )
-            pdf.setTextColor(codeTextColor.r, codeTextColor.g, codeTextColor.b)
+
+            if (isConfigTitle) {
+              // 处理配置文件标题
+              const title = textLine.replace(/^\*\*|\*\*$/g, '')
+              pdf.setFontSize(titleSize - 4) // 使用小一点的标题字号
+              pdf.setTextColor(50, 50, 50) // 标题使用深灰色
+              pdf.text(title, 40 + codePadding.left, y - 3)
+              pdf.setFontSize(codeSize) // 恢复代码字号
+            } else if (isConfigFile) {
+              pdf.setTextColor(codeTextColor.r, codeTextColor.g, codeTextColor.b)
+              // 处理配置文件格式
+              const [key, value] = textLine.split(':')
+              if (value) {
+                // 有值的情况：key: value
+                pdf.setTextColor(89, 116, 150) // 键的颜色
+                pdf.text(`${key}:`, 40 + codePadding.left + configIndent, y - 3)
+
+                const keyWidth = pdf.getTextWidth(`${key}: `)
+                pdf.setTextColor(145, 40, 140) // 值的颜色
+                pdf.text(value.trim(), 40 + codePadding.left + configIndent + keyWidth, y - 3)
+              } else {
+                // 只有键的情况：key:
+                pdf.setTextColor(89, 116, 150)
+                pdf.text(textLine, 40 + codePadding.left + configIndent, y - 3)
+              }
+            } else {
+              // 普通代码
+              pdf.setTextColor(codeTextColor.r, codeTextColor.g, codeTextColor.b)
+              pdf.text(textLine, isInCodeBlock ? 40 + codePadding.left : 40, y - 3)
+            }
+          } else {
+            // 非代码块的文本
+            pdf.text(textLine, 40, y - 3)
           }
-          pdf.text(textLine, isInCodeBlock ? 40 + codePadding.left : 40, y - 3)
           y += (pdf.getFontSize() * codeLineHeight)
         })
       })
 
       if (isInCodeBlock) {
         pdf.setFillColor(codeBlockBgColor)
-        pdf.rect(30, y - 5, 535, 2, 'F') // 下边框
+        pdf.rect(30, y + 5, 535, 8, 'F') // 下边框
       }
 
       y += 20
@@ -532,7 +601,10 @@ export default () => {
     pdf.insertPage(1)
     y = 40
     pdf.setFontSize(titleSize)
-    pdf.text('目录', 40, y)
+    const tocTitle = '目录'
+    const tocTitleWidth = pdf.getTextWidth(tocTitle)
+    const tocTitleX = (pageWidth - tocTitleWidth) / 2
+    pdf.text(tocTitle, tocTitleX, y)
     y += titleSize + 20
 
     pdf.setFontSize(normalSize)
@@ -552,33 +624,6 @@ export default () => {
     })
 
     pdf.save(`${mainTitle || 'exported_document'}.pdf`)
-  }
-
-  const generateOutline = (content: string) => {
-    const lines = content.split('\n')
-    let outline = ''
-
-    // 使用第一个 MessageItem 的第一行文字作为标题
-    const firstMessageContent = messageList().length > 0 ? messageList()[0].content : ''
-    const firstLineOfMessage = firstMessageContent.split('\n')[0] || 'Outline'
-    outline += `# ${firstLineOfMessage}\n\n`
-
-    // 处理每一行
-    lines.forEach((line) => {
-      const trimmedLine = line.trim()
-      if (trimmedLine) {
-        if (line.startsWith('#')) {
-          // 如果是标题，保持原有层级
-          const level = line.match(/^#+/)[0].length
-          outline += `${'  '.repeat(level - 1)}- ${line.replace(/^#+\s*/, '')}\n`
-        } else if (!line.startsWith('```')) {
-          // 如果不是代码块标记，作为二级标题
-          outline += `  - ${trimmedLine}\n`
-        }
-      }
-    })
-
-    return outline
   }
 
   return (
