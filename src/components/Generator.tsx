@@ -467,10 +467,18 @@ export default () => {
     })
     y += titleSize + 20
 
+    // 添加配置文件相关的颜色设置
+    const configColors = {
+      title: { r: 50, g: 50, b: 50 }, // 配置标题颜色
+      key: { r: 89, g: 116, b: 150 }, // 配置键名颜色
+      value: { r: 145, g: 40, b: 140 }, // 配置值颜色
+    }
+
     // 遍历消息
     messageList().forEach((msg) => {
       pdf.setFontSize(normalSize)
       let isInCodeBlock = false
+      let isConfigBlock = false // 用于标记是否是配置文件代码块
 
       const lines = msg.content.split('\n')
       lines.forEach((line) => {
@@ -480,6 +488,8 @@ export default () => {
 
         if (line.startsWith('```')) {
           isInCodeBlock = !isInCodeBlock
+          // 检查是否是配置文件代码块
+          isConfigBlock = line.includes('config') || line.includes('yaml') || line.includes('yml')
           if (!isInCodeBlock) {
             y += codePadding.bottom + codeBlockMargin // 代码块结束后的间距
             pdf.setFontSize(normalSize)
@@ -496,7 +506,7 @@ export default () => {
         }
 
         // 处理 Markdown 标题
-        if (line.startsWith('**') && line.endsWith('**')) {
+        if (line.startsWith('**') && line.endsWith('**') && !isInCodeBlock) {
           const titleText = line.replace(/^\*\*|\*\*$/g, '')
           pdf.setFontSize(titleSize - 10) // 将标题字号减小
           pdf.setTextColor(50, 50, 50) // 标题使用深灰色
@@ -544,58 +554,111 @@ export default () => {
           if (isInCodeBlock) {
             const lineHeight = pdf.getFontSize() * codeLineHeight
             pdf.setFillColor(codeBlockBgColor)
+            pdf.rect(30, y - (lineHeight * 0.8), 535, lineHeight * 1.8, 'F')
 
-            // 检查是否是配置文件格式
-            const isConfigFile = textLine.includes(':') && !textLine.includes(' :')
-            // 检查是否是配置文件标题行（被 ** 包围的行）
-            const isConfigTitle = textLine.startsWith('**') && textLine.endsWith('**')
+            if (isConfigBlock) {
+              if (textLine.startsWith('**') && textLine.endsWith('**')) {
+                // 配置文件标题
+                const title = textLine.replace(/^\*\*|\*\*$/g, '')
+                pdf.setFontSize(titleSize - 4)
+                pdf.setTextColor(configColors.title.r, configColors.title.g, configColors.title.b)
+                pdf.text(title, 40 + codePadding.left, y - 3)
+                pdf.setFontSize(codeSize)
+              } else if (textLine.match(/^\d+\.\s+\*\*.+?\*\*.*$/)) {
+                // 处理序号加粗标题的情况，如: "1. **服务器**：说明文本"
+                const parts = textLine.split(/\*\*/)
+                const prefix = parts[0] // "1. "
+                const boldText = parts[1] // "服务器"
+                const suffix = parts[2] || '' // "：说明文本"
 
-            // 计算缩进级别（用于配置文件）
-            const indentLevel = textLine.match(/^\s*/)[0].length / 2
-            const configIndent = isConfigFile ? indentLevel * 20 : 0
+                // 绘制序号和前缀
+                pdf.setTextColor(0, 0, 0)
+                pdf.text(prefix, 40, y - 3)
 
-            pdf.rect(
-              30,
-              y - (lineHeight * 0.8),
-              535,
-              lineHeight * 1.8,
-              'F',
-            )
+                // 计算序号宽度
+                const prefixWidth = pdf.getTextWidth(prefix)
 
-            if (isConfigTitle) {
-              // 处理配置文件标题
-              const title = textLine.replace(/^\*\*|\*\*$/g, '')
-              pdf.setFontSize(titleSize - 4) // 使用小一点的标题字号
-              pdf.setTextColor(50, 50, 50) // 标题使用深灰色
-              pdf.text(title, 40 + codePadding.left, y - 3)
-              pdf.setFontSize(codeSize) // 恢复代码字号
-            } else if (isConfigFile) {
-              pdf.setTextColor(codeTextColor.r, codeTextColor.g, codeTextColor.b)
-              // 处理配置文件格式
-              const [key, value] = textLine.split(':')
-              if (value) {
-                // 有值的情况：key: value
-                pdf.setTextColor(89, 116, 150) // 键的颜色
-                pdf.text(`${key}:`, 40 + codePadding.left + configIndent, y - 3)
+                // 绘制加粗文本
+                pdf.setFontSize(pdf.getFontSize() + 1) // 稍微加大字号来模拟加粗
+                pdf.setTextColor(0, 0, 0)
+                pdf.text(boldText, 40 + prefixWidth, y - 3)
 
-                const keyWidth = pdf.getTextWidth(`${key}: `)
-                pdf.setTextColor(145, 40, 140) // 值的颜色
-                pdf.text(value.trim(), 40 + codePadding.left + configIndent + keyWidth, y - 3)
+                // 计算加粗文本宽度
+                const boldWidth = pdf.getTextWidth(boldText)
+
+                // 恢复正常字号
+                pdf.setFontSize(pdf.getFontSize() - 1)
+
+                // 绘制后缀文本
+                pdf.setTextColor(0, 0, 0)
+                pdf.text(suffix, 40 + prefixWidth + boldWidth, y - 3)
+              } else if (textLine.includes(':')) {
+                // 计算缩进级别
+                const indentLevel = textLine.match(/^\s*/)[0].length / 2
+                const indent = indentLevel * 20
+                const xPos = 40 + codePadding.left + indent
+
+                const [key, value] = textLine.split(':')
+                if (value) {
+                  // 键值对
+                  pdf.setTextColor(configColors.key.r, configColors.key.g, configColors.key.b)
+                  pdf.text(`${key.trim()}:`, xPos, y - 3)
+
+                  const keyWidth = pdf.getTextWidth(`${key.trim()}: `)
+                  pdf.setTextColor(configColors.value.r, configColors.value.g, configColors.value.b)
+                  pdf.text(value.trim(), xPos + keyWidth, y - 3)
+                } else {
+                  // 只有键名
+                  pdf.setTextColor(configColors.key.r, configColors.key.g, configColors.key.b)
+                  pdf.text(`${key.trim()}:`, xPos, y - 3)
+                }
               } else {
-                // 只有键的情况：key:
-                pdf.setTextColor(89, 116, 150)
-                pdf.text(textLine, 40 + codePadding.left + configIndent, y - 3)
+                // 普通文本行
+                pdf.setTextColor(codeTextColor.r, codeTextColor.g, codeTextColor.b)
+                pdf.text(textLine, 40 + codePadding.left, y - 3)
               }
             } else {
-              // 普通代码
+              // 非配置文件的代码
               pdf.setTextColor(codeTextColor.r, codeTextColor.g, codeTextColor.b)
-              pdf.text(textLine, isInCodeBlock ? 40 + codePadding.left : 40, y - 3)
+              pdf.text(textLine, 40 + codePadding.left, y - 3)
             }
+            y += lineHeight
           } else {
             // 非代码块的文本
-            pdf.text(textLine, 40, y - 3)
+            if (textLine.match(/^\d+\.\s+\*\*.+?\*\*.*$/)) {
+              // 处理序号加粗标题的情况，如: "1. **服务器**：说明文本"
+              const parts = textLine.split(/\*\*/)
+              const prefix = parts[0] // "1. "
+              const boldText = parts[1] // "服务器"
+              const suffix = parts[2] || '' // "：说明文本"
+
+              // 绘制序号和前缀
+              pdf.setTextColor(0, 0, 0)
+              pdf.text(prefix, 40, y - 3)
+
+              // 计算序号宽度
+              const prefixWidth = pdf.getTextWidth(prefix)
+
+              // 绘制加粗文本
+              pdf.setFontSize(pdf.getFontSize() + 1) // 稍微加大字号来模拟加粗
+              pdf.setTextColor(0, 0, 0)
+              pdf.text(boldText, 40 + prefixWidth, y - 3)
+
+              // 计算加粗文本宽度
+              const boldWidth = pdf.getTextWidth(boldText)
+
+              // 恢复正常字号
+              pdf.setFontSize(pdf.getFontSize() - 1)
+
+              // 绘制后缀文本
+              pdf.setTextColor(0, 0, 0)
+              pdf.text(suffix, 40 + prefixWidth + boldWidth, y - 3)
+            } else {
+              // 普通文本
+              pdf.text(textLine, 40, y - 3)
+            }
+            y += (pdf.getFontSize() * 1.5)
           }
-          y += (pdf.getFontSize() * codeLineHeight)
         })
       })
 
