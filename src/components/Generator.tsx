@@ -423,7 +423,8 @@ export default () => {
 
     // 添加中文字体支持
     await pdf.addFont('/fonts/NotoSansSC-Regular.ttf', 'NotoSans', 'normal')
-    pdf.setFont('NotoSans')
+    await pdf.addFont('/fonts/NotoSansSC-Bold.ttf', 'NotoSans', 'bold') // 添加加粗字体
+    pdf.setFont('NotoSans', 'normal')
 
     // 设置字体大小和颜色
     const titleSize = 24
@@ -573,24 +574,23 @@ export default () => {
 
                 // 绘制序号和前缀
                 pdf.setTextColor(0, 0, 0)
+                pdf.setFont('NotoSans', 'normal')
                 pdf.text(prefix, 40, y - 3)
 
                 // 计算序号宽度
                 const prefixWidth = pdf.getTextWidth(prefix)
 
                 // 绘制加粗文本
-                pdf.setFontSize(pdf.getFontSize() + 1) // 稍微加大字号来模拟加粗
-                pdf.setTextColor(0, 0, 0)
+                pdf.setFont('NotoSans', 'bold') // 设置为加粗字体
                 pdf.text(boldText, 40 + prefixWidth, y - 3)
 
                 // 计算加粗文本宽度
                 const boldWidth = pdf.getTextWidth(boldText)
 
-                // 恢复正常字号
-                pdf.setFontSize(pdf.getFontSize() - 1)
+                // 恢复正常字体
+                pdf.setFont('NotoSans', 'normal')
 
                 // 绘制后缀文本
-                pdf.setTextColor(0, 0, 0)
                 pdf.text(suffix, 40 + prefixWidth + boldWidth, y - 3)
               } else if (textLine.includes(':')) {
                 // 计算缩进级别
@@ -634,27 +634,27 @@ export default () => {
 
               // 绘制序号和前缀
               pdf.setTextColor(0, 0, 0)
+              pdf.setFont('NotoSans', 'normal')
               pdf.text(prefix, 40, y - 3)
 
               // 计算序号宽度
               const prefixWidth = pdf.getTextWidth(prefix)
 
               // 绘制加粗文本
-              pdf.setFontSize(pdf.getFontSize() + 1) // 稍微加大字号来模拟加粗
-              pdf.setTextColor(0, 0, 0)
+              pdf.setFont('NotoSans', 'bold') // 设置为加粗字体
               pdf.text(boldText, 40 + prefixWidth, y - 3)
 
               // 计算加粗文本宽度
               const boldWidth = pdf.getTextWidth(boldText)
 
-              // 恢复正常字号
-              pdf.setFontSize(pdf.getFontSize() - 1)
+              // 恢复正常字体
+              pdf.setFont('NotoSans', 'normal')
 
               // 绘制后缀文本
-              pdf.setTextColor(0, 0, 0)
               pdf.text(suffix, 40 + prefixWidth + boldWidth, y - 3)
             } else {
               // 普通文本
+              pdf.setFont('NotoSans', 'normal')
               pdf.text(textLine, 40, y - 3)
             }
             y += (pdf.getFontSize() * 1.5)
