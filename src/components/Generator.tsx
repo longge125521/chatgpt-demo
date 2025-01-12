@@ -237,7 +237,7 @@ export default () => {
             content += `<pre class="code-block ${codeLanguage}"><code class="language-${codeLanguage}">`
           }
           isInCodeBlock = !isInCodeBlock
-        } else if (line.startsWith('#')) {
+        } else if (line.startsWith('#') && !isInCodeBlock) {
           const level = line.match(/^#+/)[0].length
           content += `<h${level} class="heading-${level}">${line.replace(/^#+\s*/, '')}</h${level}>`
         } else {
@@ -636,16 +636,32 @@ export default () => {
     pdf.save(`${mainTitle || 'exported_document'}.pdf`)
   }
 
+  const processMarkdownForOutline = (content: string) => {
+    let isInCodeBlock = false
+    return content.split('\n').map((line) => {
+      if (line.startsWith('```')) {
+        isInCodeBlock = !isInCodeBlock
+        return line
+      }
+      // 在代码块内的行，如果以 # 开头，添加空格防止被解析为标题
+      if (isInCodeBlock && line.startsWith('#'))
+        return ` ${line}`
+
+      return line
+    }).join('\n')
+  }
+
   return (
     <div className="relative">
       {(currentAssistantMessage() || messageList().length > 0) && (
         <Outline
-          markdown={currentAssistantMessage()
+          markdown={processMarkdownForOutline(
+            currentAssistantMessage()
             || (messageList().length > 0
               ? messageList()[messageList().length - 1].content
               : ''
-            )
-          }
+            ),
+          )}
           title={messageList().length > 0 ? messageList()[0].content.split('\n')[0] : '大纲'}
         />
       )}
