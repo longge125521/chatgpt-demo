@@ -504,7 +504,7 @@ export default () => {
     }
     const codePadding = {
       top: 15, // 代码块顶部内边距
-      bottom: 0, // 代码块底部内边距
+      bottom: 15, // 代码块底部内边距
       left: 15, // 代码文本左边距
       right: 15, // 代码文本右边距
     }
@@ -539,6 +539,12 @@ export default () => {
       value: { r: 145, g: 40, b: 140 }, // 配置值颜色
     }
 
+    // 在处理代码块之前，添加一个辅助函数来计算代码块的预计高度
+    const calculateCodeBlockHeight = (lines: string[]) => {
+      const lineHeight = codeSize * codeLineHeight
+      return (lines.length * lineHeight) + codePadding.top + codePadding.bottom + (codeBlockMargin * 2)
+    }
+
     // 遍历消息
     messageList().forEach((msg) => {
       PDF.setFontSize(normalSize)
@@ -553,6 +559,25 @@ export default () => {
           return
 
         if (line.trim().startsWith('```')) {
+          if (!isInCodeBlock) {
+            // 代码块开始，计算后续代码块内容的高度
+            const codeLines = []
+            let i = lines.indexOf(line) + 1
+            while (i < lines.length && !lines[i].trim().startsWith('```')) {
+              codeLines.push(lines[i])
+              i++
+            }
+
+            const estimatedHeight = calculateCodeBlockHeight(codeLines)
+
+            // 如果当前页剩余空间不足以容纳整个代码块，提前换页
+            if (y + estimatedHeight > 780) {
+              PDF.addPage()
+              currentPage++
+              y = 40
+            }
+          }
+
           isInCodeBlock = !isInCodeBlock
           // 检查是否是配置文件代码块
           isConfigBlock = line.includes('config') || line.includes('yaml') || line.includes('yml')
