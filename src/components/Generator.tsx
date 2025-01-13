@@ -229,7 +229,7 @@ export default () => {
       lines.forEach((line, lineIndex) => {
         if (index === 0 && lineIndex === 0) return
 
-        if (line.startsWith('```')) {
+        if (line.trim().startsWith('```')) {
           if (isInCodeBlock) {
             content += '</code></pre>'
           } else {
@@ -242,14 +242,41 @@ export default () => {
           content += `<h${level} class="heading-${level}">${line.replace(/^#+\s*/, '')}</h${level}>`
         } else {
           if (isInCodeBlock) {
-            const escapedLine = line
-              .replace(/&/g, '&amp;')
-              .replace(/</g, '&lt;')
-              .replace(/>/g, '&gt;')
-              .replace(/\t/g, '    ')
-            content += `${escapedLine}\n`
+            // 处理代码块内的加粗文本
+            if (line.match(/^\*\*.+\*\*$/)) {
+              // 如果整行都是加粗文本
+              const boldText = line.replace(/^\*\*|\*\*$/g, '')
+              content += `<div class="code-title">${boldText}</div>\n`
+            } else if (line.includes('**')) {
+              // 如果行中包含加粗部分
+              const escapedLine = line
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/\t/g, '    ')
+                .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+              content += `${escapedLine}\n`
+            } else {
+              const escapedLine = line
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/\t/g, '    ')
+              content += `${escapedLine}\n`
+            }
           } else if (line.trim()) {
-            content += `<p class="paragraph">${line}</p>`
+            // 处理普通文本中的加粗
+            if (line.match(/^\*\*.+\*\*$/)) {
+              // 如果整行都是加粗文本
+              const boldText = line.replace(/^\*\*|\*\*$/g, '')
+              content += `<p class="bold-title">${boldText}</p>`
+            } else if (line.includes('**')) {
+              // 如果行中包含加粗部分
+              const processedLine = line.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+              content += `<p class="paragraph">${processedLine}</p>`
+            } else {
+              content += `<p class="paragraph">${line}</p>`
+            }
           }
         }
       })
@@ -264,9 +291,7 @@ export default () => {
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
         <title>Exported Document</title>
-        <!--[if gte mso 9]><xml><w:WordDocument><w:View>Print</w:View><w:TrackMoves>false</w:TrackMoves><w:TrackFormatting/><w:ValidateAgainstSchemas/><w:SaveIfXMLInvalid>false</w:SaveIfXMLInvalid><w:IgnoreMixedContent>false</w:IgnoreMixedContent><w:AlwaysShowPlaceholderText>false</w:AlwaysShowPlaceholderText><w:DoNotPromoteQF/><w:LidThemeOther>EN-US</w:LidThemeOther><w:LidThemeAsian>ZH-CN</w:LidThemeAsian><w:LidThemeComplexScript>X-NONE</w:LidThemeComplexScript><w:Compatibility><w:BreakWrappedTables/><w:SnapToGridInCell/><w:WrapTextWithPunct/><w:UseAsianBreakRules/><w:DontGrowAutofit/><w:SplitPgBreakAndParaMark/><w:DontVertAlignCellWithSp/><w:DontBreakConstrainedForcedTables/><w:DontVertAlignInTxbx/><w:Word11KerningPairs/><w:CachedColBalance/><w:UseFELayout/></w:Compatibility><w:BrowserLevel>MicrosoftInternetExplorer4</w:BrowserLevel><m:mathPr><m:mathFont m:val="Cambria Math"/><m:brkBin m:val="before"/><m:brkBinSub m:val="--"/><m:smallFrac m:val="off"/><m:dispDef/><m:lMargin m:val="0"/> <m:rMargin m:val="0"/><m:defJc m:val="centerGroup"/><m:wrapIndent m:val="1440"/><m:intLim m:val="subSup"/><m:naryLim m:val="undOvr"/></m:mathPr></w:WordDocument></xml><![endif]-->
-        <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-        <?mso-application progid="Word.Document"?>
+        <!--[if gte mso 9]><xml><w:WordDocument><w:View>Print</w:View></w:WordDocument></xml><![endif]-->
         <style>
           @page {
             size: A4;
@@ -341,12 +366,30 @@ export default () => {
           pre { page-break-inside: avoid; }
           h1, h2, h3 { page-break-after: avoid; }
           p { orphans: 2; widows: 2; }
-        </style>
-        <script type="text/javascript">
-          window.onload = function() {
-            document.body.style.zoom = "100%"; // 设置默认缩放
+          .bold-title {
+            font-size: 14pt;
+            font-weight: bold;
+            color: #2C3E50;
+            margin: 12pt 0 6pt;
+            font-family: 'Arial', sans-serif;
           }
-        </script>
+          .code-title {
+            font-weight: bold;
+            color: #2C3E50;
+            font-size: 12pt;
+            margin: 8pt 0 4pt;
+            font-family: 'Arial', sans-serif;
+          }
+          strong {
+            font-weight: bold;
+            color: #2C3E50;
+          }
+          .code-block strong {
+            color: #2C3E50;
+            background-color: #E5E7EB;
+            padding: 1pt 2pt;
+          }
+        </style>
       </head>
       <body>
         <h1 class="main-title">${mainTitle}</h1>
