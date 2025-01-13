@@ -946,14 +946,14 @@ export default () => {
         />
         <For each={messages()}>
           {(message, index) => (
-            <div key={index()} class="relative">
+            <div key={index()} class="relative flex justify-between">
               <MessageItem
                 role={message.role}
                 message={message.content}
                 showRetry={() => (message.role === 'assistant' && index() === messages().length - 1)}
                 onRetry={retryLastFetch}
               />
-              <div class="absolute right-[8.5rem] top-12px z-3">
+              <div class="absolute right-0 top-2 z-3">
                 <button
                   onClick={() => deleteMessage(index())}
                   class="fcc border b-transparent w-8 h-8 p-2 bg-light-300 dark:bg-dark-300 op-90 cursor-pointer hover:bg-slate/8 rounded-md text-xl transition-colors"
