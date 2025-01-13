@@ -295,12 +295,13 @@ export default () => {
               if (line.match(/^\*\*.+\*\*$/)) {
                 // 如果整行都是加粗文本
                 const boldText = line.replace(/^\*\*|\*\*$/g, '')
-                content += `<p class="bold-title">${boldText}</p>`
+                content += `<p class="paragraph"><strong>${boldText}</strong></p>`
               } else if (line.includes('**')) {
                 // 如果行中包含加粗部分
                 const processedLine = line.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
                 content += `<p class="paragraph">${processedLine}</p>`
               } else {
+                // 普通文本
                 content += `<p class="paragraph">${line}</p>`
               }
             }
@@ -678,19 +679,45 @@ export default () => {
             y = 40
           }
 
-          // 绘制实心圆点 - 将圆点位置从 55 调整到 57
+          // 绘制实心圆点
           PDF.setFillColor(0, 0, 0)
           PDF.circle(57, y - 6, 2, 'F')
 
-          // 处理列表项文本自动换行 - 将文本缩进从 70 调整到 72
-          const listLines = PDF.splitTextToSize(listItem, 483) // 稍微调整文本宽度
-          listLines.forEach((textLine: string, index: number) => {
-            const xPos = index === 0 ? 72 : 72 // 第一行和后续行使用相同的缩进
-            PDF.text(textLine, xPos, y - 3)
-            y += PDF.getFontSize() * 1.5
-          })
+          // 处理列表项中的加粗文本
+          if (listItem.includes('**')) {
+            const parts = listItem.split(/(\*\*.*?\*\*)/g)
+            let xPos = 72
 
-          return // 处理完列表项后直接返回
+            parts.forEach((part) => {
+              if (part.startsWith('**') && part.endsWith('**')) {
+                // 加粗文本
+                const boldText = part.replace(/^\*\*|\*\*$/g, '')
+                PDF.setFont('NotoSans', 'bold')
+                const textWidth = PDF.getTextWidth(boldText)
+                PDF.text(boldText, xPos, y - 3)
+                xPos += textWidth
+              } else if (part.trim()) {
+                // 普通文本
+                PDF.setFont('NotoSans', 'normal')
+                const textWidth = PDF.getTextWidth(part)
+                PDF.text(part, xPos, y - 3)
+                xPos += textWidth
+              }
+            })
+
+            PDF.setFont('NotoSans', 'normal')
+            y += PDF.getFontSize() * 1.5
+          } else {
+            // 处理普通列表项文本自动换行
+            const listLines = PDF.splitTextToSize(listItem, 483)
+            listLines.forEach((textLine: string, index: number) => {
+              const xPos = index === 0 ? 72 : 72
+              PDF.text(textLine, xPos, y - 3)
+              y += PDF.getFontSize() * 1.5
+            })
+          }
+
+          return
         }
 
         // 处理长文本自动换行
@@ -863,8 +890,10 @@ export default () => {
     // 检查是否是无序列表项
     if (line.trim().startsWith('-')) {
       const listItem = line.trim().substring(1).trim()
+      // 处理列表项中的加粗文本
+      const processedItem = listItem.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
       // 为 Word 导出添加实心圆点样式
-      return `<li style="margin-left: 37pt; margin-bottom: 6pt; list-style-type: disc;">${listItem}</li>`
+      return `<li style="margin-left: 37pt; margin-bottom: 6pt; list-style-type: disc;">${processedItem}</li>`
     }
     return line
   }
