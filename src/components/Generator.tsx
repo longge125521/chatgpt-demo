@@ -11,15 +11,12 @@ import type { ChatMessage, ErrorMessage } from '@/types'
 
 // 动态导入以避免SSR问题
 let jsPDF: any
-let html2canvas: any
 
 if (typeof window !== 'undefined') {
   Promise.all([
     import('jspdf'),
-    import('html2canvas'),
-  ]).then(([jsPDFModule, html2canvasModule]) => {
+  ]).then(([jsPDFModule]) => {
     jsPDF = jsPDFModule.default
-    html2canvas = html2canvasModule.default
   })
 }
 
@@ -223,63 +220,79 @@ export default () => {
     const messages = messageList().map((msg, index) => {
       let content = ''
       let isInCodeBlock = false
+      let isInList = false
       let codeLanguage = ''
 
       const lines = msg.content.split('\n')
       lines.forEach((line, lineIndex) => {
         if (index === 0 && lineIndex === 0) return
 
-        if (line.trim().startsWith('```')) {
-          if (isInCodeBlock) {
-            content += '</code></pre>'
-          } else {
-            codeLanguage = line.slice(3).trim()
-            content += `<pre class="code-block ${codeLanguage}"><code class="language-${codeLanguage}">`
+        if (line.trim().startsWith('-')) {
+          if (!isInList) {
+            content += '<ul style="list-style-type: disc; margin: 8pt 0;">'
+            isInList = true
           }
-          isInCodeBlock = !isInCodeBlock
-        } else if (line.startsWith('#') && !isInCodeBlock) {
-          const level = line.match(/^#+/)[0].length
-          content += `<h${level} class="heading-${level}">${line.replace(/^#+\s*/, '')}</h${level}>`
+          content += processListItems(line)
         } else {
-          if (isInCodeBlock) {
-            // 处理代码块内的加粗文本
-            if (line.match(/^\*\*.+\*\*$/)) {
-              // 如果整行都是加粗文本
-              const boldText = line.replace(/^\*\*|\*\*$/g, '')
-              content += `<div class="code-title">${boldText}</div>\n`
-            } else if (line.includes('**')) {
-              // 如果行中包含加粗部分
-              const escapedLine = line
-                .replace(/&/g, '&amp;')
-                .replace(/</g, '&lt;')
-                .replace(/>/g, '&gt;')
-                .replace(/\t/g, '    ')
-                .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-              content += `${escapedLine}\n`
+          if (isInList) {
+            content += '</ul>'
+            isInList = false
+          }
+          if (line.trim().startsWith('```')) {
+            if (isInCodeBlock) {
+              content += '</code></pre>'
             } else {
-              const escapedLine = line
-                .replace(/&/g, '&amp;')
-                .replace(/</g, '&lt;')
-                .replace(/>/g, '&gt;')
-                .replace(/\t/g, '    ')
-              content += `${escapedLine}\n`
+              codeLanguage = line.slice(3).trim()
+              content += `<pre class="code-block ${codeLanguage}"><code class="language-${codeLanguage}">`
             }
-          } else if (line.trim()) {
-            // 处理普通文本中的加粗
-            if (line.match(/^\*\*.+\*\*$/)) {
-              // 如果整行都是加粗文本
-              const boldText = line.replace(/^\*\*|\*\*$/g, '')
-              content += `<p class="bold-title">${boldText}</p>`
-            } else if (line.includes('**')) {
-              // 如果行中包含加粗部分
-              const processedLine = line.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-              content += `<p class="paragraph">${processedLine}</p>`
-            } else {
-              content += `<p class="paragraph">${line}</p>`
+            isInCodeBlock = !isInCodeBlock
+          } else if (line.startsWith('#') && !isInCodeBlock) {
+            const level = line.match(/^#+/)[0].length
+            content += `<h${level} class="heading-${level}">${line.replace(/^#+\s*/, '')}</h${level}>`
+          } else {
+            if (isInCodeBlock) {
+              // 处理代码块内的加粗文本
+              if (line.match(/^\*\*.+\*\*$/)) {
+                // 如果整行都是加粗文本
+                const boldText = line.replace(/^\*\*|\*\*$/g, '')
+                content += `<div class="code-title">${boldText}</div>\n`
+              } else if (line.includes('**')) {
+                // 如果行中包含加粗部分
+                const escapedLine = line
+                  .replace(/&/g, '&amp;')
+                  .replace(/</g, '&lt;')
+                  .replace(/>/g, '&gt;')
+                  .replace(/\t/g, '    ')
+                  .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+                content += `${escapedLine}\n`
+              } else {
+                const escapedLine = line
+                  .replace(/&/g, '&amp;')
+                  .replace(/</g, '&lt;')
+                  .replace(/>/g, '&gt;')
+                  .replace(/\t/g, '    ')
+                content += `${escapedLine}\n`
+              }
+            } else if (line.trim()) {
+              // 处理普通文本中的加粗
+              if (line.match(/^\*\*.+\*\*$/)) {
+                // 如果整行都是加粗文本
+                const boldText = line.replace(/^\*\*|\*\*$/g, '')
+                content += `<p class="bold-title">${boldText}</p>`
+              } else if (line.includes('**')) {
+                // 如果行中包含加粗部分
+                const processedLine = line.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+                content += `<p class="paragraph">${processedLine}</p>`
+              } else {
+                content += `<p class="paragraph">${line}</p>`
+              }
             }
           }
         }
       })
+
+      if (isInList)
+        content += '</ul>'
 
       if (isInCodeBlock) content += '</code></pre>'
 
@@ -389,6 +402,14 @@ export default () => {
             background-color: #E5E7EB;
             padding: 1pt 2pt;
           }
+          ul {
+            list-style-type: disc;
+            margin-left: 20pt;
+            padding-left: 20pt;
+          }
+          li {
+            margin-bottom: 6pt;
+          }
         </style>
       </head>
       <body>
@@ -457,7 +478,7 @@ export default () => {
     const mainTitle = messageList().length > 0 ? messageList()[0].content.split('\n')[0] : 'Document'
 
     // 创建 PDF 实例
-    const pdf = new jsPDF({
+    const PDF = new jsPDF({
       orientation: 'portrait',
       unit: 'pt',
       format: 'a4',
@@ -465,9 +486,9 @@ export default () => {
     })
 
     // 添加中文字体支持
-    await pdf.addFont('/fonts/NotoSansSC-Regular.ttf', 'NotoSans', 'normal')
-    await pdf.addFont('/fonts/NotoSansSC-Bold.ttf', 'NotoSans', 'bold') // 添加加粗字体
-    pdf.setFont('NotoSans', 'normal')
+    await PDF.addFont('/fonts/NotoSansSC-Regular.ttf', 'NotoSans', 'normal')
+    await PDF.addFont('/fonts/NotoSansSC-Bold.ttf', 'NotoSans', 'bold') // 添加加粗字体
+    PDF.setFont('NotoSans', 'normal')
 
     // 设置字体大小和颜色
     const titleSize = 24
@@ -498,12 +519,12 @@ export default () => {
     let y = 40
 
     // 添加标题并记录到大纲
-    pdf.setFontSize(titleSize)
+    PDF.setFontSize(titleSize)
     // 计算文本宽度来居中显示
-    const titleWidth = pdf.getTextWidth(mainTitle)
+    const titleWidth = PDF.getTextWidth(mainTitle)
     const pageWidth = 595 // A4纸的宽度(pt)
     const titleX = (pageWidth - titleWidth) / 2 // 居中的X坐标
-    pdf.text(mainTitle, titleX, y)
+    PDF.text(mainTitle, titleX, y)
     outlineItems.push({
       title: mainTitle,
       page: currentPage,
@@ -520,9 +541,10 @@ export default () => {
 
     // 遍历消息
     messageList().forEach((msg) => {
-      pdf.setFontSize(normalSize)
+      PDF.setFontSize(normalSize)
       let isInCodeBlock = false
       let isConfigBlock = false // 用于标记是否是配置文件代码块
+      const isInList = false // 添加列表状态标记
 
       const lines = msg.content.split('\n')
       lines.forEach((line) => {
@@ -536,15 +558,15 @@ export default () => {
           isConfigBlock = line.includes('config') || line.includes('yaml') || line.includes('yml')
           if (!isInCodeBlock) {
             y += codePadding.bottom + codeBlockMargin // 代码块结束后的间距
-            pdf.setFontSize(normalSize)
-            pdf.setTextColor(0, 0, 0)
+            PDF.setFontSize(normalSize)
+            PDF.setTextColor(0, 0, 0)
           } else {
             y += codeBlockMargin // 代码块开始前的间距
-            pdf.setFillColor(codeBlockBgColor)
-            pdf.rect(30, y - codePadding.top, 535, codePadding.top + 1, 'F') // 上边框
+            PDF.setFillColor(codeBlockBgColor)
+            PDF.rect(30, y - codePadding.top, 535, codePadding.top + 1, 'F') // 上边框
             y += codePadding.top // 代码块开始前的内边距
-            pdf.setFontSize(codeSize)
-            pdf.setTextColor(codeTextColor.r, codeTextColor.g, codeTextColor.b)
+            PDF.setFontSize(codeSize)
+            PDF.setTextColor(codeTextColor.r, codeTextColor.g, codeTextColor.b)
           }
           return
         }
@@ -552,10 +574,10 @@ export default () => {
         // 处理 Markdown 标题
         if (line.startsWith('**') && line.endsWith('**') && !isInCodeBlock) {
           const titleText = line.replace(/^\*\*|\*\*$/g, '')
-          pdf.setFontSize(titleSize - 10) // 将标题字号减小
-          pdf.setTextColor(50, 50, 50) // 标题使用深灰色
-          pdf.text(titleText, 40, y - 3)
-          y += (pdf.getFontSize() * 1.5) // 增加 y 坐标
+          PDF.setFontSize(titleSize - 10) // 将标题字号减小
+          PDF.setTextColor(50, 50, 50) // 标题使用深灰色
+          PDF.text(titleText, 40, y - 3)
+          y += (PDF.getFontSize() * 1.5) // 增加 y 坐标
           return
         }
 
@@ -563,8 +585,8 @@ export default () => {
           // 标题处理
           const level = line.match(/^#+/)[0].length
           const titleText = line.replace(/^#+\s*/, '')
-          pdf.setFontSize(titleSize - (level * 2))
-          pdf.setTextColor(0, 0, 0)
+          PDF.setFontSize(titleSize - (level * 2))
+          PDF.setTextColor(0, 0, 0)
           // 记录标题到大纲
           outlineItems.push({
             title: titleText,
@@ -574,40 +596,40 @@ export default () => {
           })
           line = titleText
         } else if (!isInCodeBlock) {
-          pdf.setFontSize(normalSize)
-          pdf.setTextColor(0, 0, 0)
+          PDF.setFontSize(normalSize)
+          PDF.setTextColor(0, 0, 0)
         }
 
         // 检查是否需要新页
         if (y > 780) {
-          pdf.addPage()
+          PDF.addPage()
           currentPage++
           y = 40
           if (isInCodeBlock) {
-            pdf.setFillColor(codeBlockBgColor)
-            pdf.rect(30, y - codePadding.top, 535, codePadding.top + 1, 'F')
+            PDF.setFillColor(codeBlockBgColor)
+            PDF.rect(30, y - codePadding.top, 535, codePadding.top + 1, 'F')
             y += codePadding.top
-            pdf.setFontSize(codeSize)
-            pdf.setTextColor(codeTextColor.r, codeTextColor.g, codeTextColor.b)
+            PDF.setFontSize(codeSize)
+            PDF.setTextColor(codeTextColor.r, codeTextColor.g, codeTextColor.b)
           }
         }
 
         // 处理长文本自动换行
-        const textLines = pdf.splitTextToSize(line, isInCodeBlock ? 490 : 520) // 代码块左右留出更多空间
+        const textLines = PDF.splitTextToSize(line, isInCodeBlock ? 490 : 520) // 代码块左右留出更多空间
         textLines.forEach((textLine: string) => {
           if (isInCodeBlock) {
-            const lineHeight = pdf.getFontSize() * codeLineHeight
-            pdf.setFillColor(codeBlockBgColor)
-            pdf.rect(30, y - (lineHeight * 0.8), 535, lineHeight * 1.8, 'F')
+            const lineHeight = PDF.getFontSize() * codeLineHeight
+            PDF.setFillColor(codeBlockBgColor)
+            PDF.rect(30, y - (lineHeight * 0.8), 535, lineHeight * 1.8, 'F')
 
             if (isConfigBlock) {
               if (textLine.startsWith('**') && textLine.endsWith('**')) {
                 // 配置文件标题
                 const title = textLine.replace(/^\*\*|\*\*$/g, '')
-                pdf.setFontSize(titleSize - 4)
-                pdf.setTextColor(configColors.title.r, configColors.title.g, configColors.title.b)
-                pdf.text(title, 40 + codePadding.left, y - 3)
-                pdf.setFontSize(codeSize)
+                PDF.setFontSize(titleSize - 4)
+                PDF.setTextColor(configColors.title.r, configColors.title.g, configColors.title.b)
+                PDF.text(title, 40 + codePadding.left, y - 3)
+                PDF.setFontSize(codeSize)
               } else if (textLine.match(/^\d+\.\s+\*\*.+?\*\*.*$/)) {
                 // 处理序号加粗标题的情况，如: "1. **服务器**：说明文本"
                 const parts = textLine.split(/\*\*/)
@@ -616,25 +638,25 @@ export default () => {
                 const suffix = parts[2] || '' // "：说明文本"
 
                 // 绘制序号和前缀
-                pdf.setTextColor(0, 0, 0)
-                pdf.setFont('NotoSans', 'normal')
-                pdf.text(prefix, 40, y - 3)
+                PDF.setTextColor(0, 0, 0)
+                PDF.setFont('NotoSans', 'normal')
+                PDF.text(prefix, 40, y - 3)
 
                 // 计算序号宽度
-                const prefixWidth = pdf.getTextWidth(prefix)
+                const prefixWidth = PDF.getTextWidth(prefix)
 
                 // 绘制加粗文本
-                pdf.setFont('NotoSans', 'bold') // 设置为加粗字体
-                pdf.text(boldText, 40 + prefixWidth, y - 3)
+                PDF.setFont('NotoSans', 'bold') // 设置为加粗字体
+                PDF.text(boldText, 40 + prefixWidth, y - 3)
 
                 // 计算加粗文本宽度
-                const boldWidth = pdf.getTextWidth(boldText)
+                const boldWidth = PDF.getTextWidth(boldText)
 
                 // 恢复正常字体
-                pdf.setFont('NotoSans', 'normal')
+                PDF.setFont('NotoSans', 'normal')
 
                 // 绘制后缀文本
-                pdf.text(suffix, 40 + prefixWidth + boldWidth, y - 3)
+                PDF.text(suffix, 40 + prefixWidth + boldWidth, y - 3)
               } else if (textLine.includes(':')) {
                 // 计算缩进级别
                 const indentLevel = textLine.match(/^\s*/)[0].length / 2
@@ -644,26 +666,26 @@ export default () => {
                 const [key, value] = textLine.split(':')
                 if (value) {
                   // 键值对
-                  pdf.setTextColor(configColors.key.r, configColors.key.g, configColors.key.b)
-                  pdf.text(`${key.trim()}:`, xPos, y - 3)
+                  PDF.setTextColor(configColors.key.r, configColors.key.g, configColors.key.b)
+                  PDF.text(`${key.trim()}:`, xPos, y - 3)
 
-                  const keyWidth = pdf.getTextWidth(`${key.trim()}: `)
-                  pdf.setTextColor(configColors.value.r, configColors.value.g, configColors.value.b)
-                  pdf.text(value.trim(), xPos + keyWidth, y - 3)
+                  const keyWidth = PDF.getTextWidth(`${key.trim()}: `)
+                  PDF.setTextColor(configColors.value.r, configColors.value.g, configColors.value.b)
+                  PDF.text(value.trim(), xPos + keyWidth, y - 3)
                 } else {
                   // 只有键名
-                  pdf.setTextColor(configColors.key.r, configColors.key.g, configColors.key.b)
-                  pdf.text(`${key.trim()}:`, xPos, y - 3)
+                  PDF.setTextColor(configColors.key.r, configColors.key.g, configColors.key.b)
+                  PDF.text(`${key.trim()}:`, xPos, y - 3)
                 }
               } else {
                 // 普通文本行
-                pdf.setTextColor(codeTextColor.r, codeTextColor.g, codeTextColor.b)
-                pdf.text(textLine, 40 + codePadding.left, y - 3)
+                PDF.setTextColor(codeTextColor.r, codeTextColor.g, codeTextColor.b)
+                PDF.text(textLine, 40 + codePadding.left, y - 3)
               }
             } else {
               // 非配置文件的代码
-              pdf.setTextColor(codeTextColor.r, codeTextColor.g, codeTextColor.b)
-              pdf.text(textLine, 40 + codePadding.left, y - 3)
+              PDF.setTextColor(codeTextColor.r, codeTextColor.g, codeTextColor.b)
+              PDF.text(textLine, 40 + codePadding.left, y - 3)
             }
             y += lineHeight
           } else {
@@ -677,70 +699,70 @@ export default () => {
               const suffix = parts[2] || '' // "：说明文本"
 
               // 绘制序号和前缀
-              pdf.setTextColor(0, 0, 0)
-              pdf.setFont('NotoSans', 'normal')
-              pdf.text(prefix, 40, y - 3)
+              PDF.setTextColor(0, 0, 0)
+              PDF.setFont('NotoSans', 'normal')
+              PDF.text(prefix, 40, y - 3)
 
               // 计算序号宽度
-              const prefixWidth = pdf.getTextWidth(prefix)
+              const prefixWidth = PDF.getTextWidth(prefix)
 
               // 绘制加粗文本
-              pdf.setFont('NotoSans', 'bold') // 设置为加粗字体
-              pdf.text(boldText, 40 + prefixWidth, y - 3)
+              PDF.setFont('NotoSans', 'bold') // 设置为加粗字体
+              PDF.text(boldText, 40 + prefixWidth, y - 3)
 
               // 计算加粗文本宽度
-              const boldWidth = pdf.getTextWidth(boldText)
+              const boldWidth = PDF.getTextWidth(boldText)
 
               // 恢复正常字体
-              pdf.setFont('NotoSans', 'normal')
+              PDF.setFont('NotoSans', 'normal')
 
               // 绘制后缀文本
-              pdf.text(suffix, 40 + prefixWidth + boldWidth, y - 3)
+              PDF.text(suffix, 40 + prefixWidth + boldWidth, y - 3)
             } else {
               // 普通文本
-              pdf.setFont('NotoSans', 'normal')
-              pdf.text(textLine, 40, y - 3)
+              PDF.setFont('NotoSans', 'normal')
+              PDF.text(textLine, 40, y - 3)
             }
-            y += (pdf.getFontSize() * 1.5)
+            y += (PDF.getFontSize() * 1.5)
           }
         })
       })
 
       if (isInCodeBlock) {
-        pdf.setFillColor(codeBlockBgColor)
-        pdf.rect(30, y + 5, 535, 8, 'F') // 下边框
+        PDF.setFillColor(codeBlockBgColor)
+        PDF.rect(30, y + 5, 535, 8, 'F') // 下边框
       }
 
       y += 20
     })
 
     // 在文档开头添加大纲页
-    pdf.insertPage(1)
+    PDF.insertPage(1)
     y = 40
-    pdf.setFontSize(titleSize)
+    PDF.setFontSize(titleSize)
     const tocTitle = '目录'
-    const tocTitleWidth = pdf.getTextWidth(tocTitle)
+    const tocTitleWidth = PDF.getTextWidth(tocTitle)
     const tocTitleX = (pageWidth - tocTitleWidth) / 2
-    pdf.text(tocTitle, tocTitleX, y)
+    PDF.text(tocTitle, tocTitleX, y)
     y += titleSize + 20
 
-    pdf.setFontSize(normalSize)
+    PDF.setFontSize(normalSize)
     outlineItems.forEach((item) => {
       if (y > 780) {
-        pdf.addPage()
+        PDF.addPage()
         y = 40
       }
       const indent = item.level ? (item.level - 1) * 20 : 0
       const text = `${item.title}`
-      pdf.setTextColor(0, 0, 238) // 使用蓝色表示链接
-      pdf.textWithLink(text, 40 + indent, y, {
+      PDF.setTextColor(0, 0, 238) // 使用蓝色表示链接
+      PDF.textWithLink(text, 40 + indent, y, {
         pageNumber: item.page + 1, // +1 因为插入了目录页
         y: item.y,
       })
       y += normalSize * 1.5
     })
 
-    pdf.save(`${mainTitle || 'exported_document'}.pdf`)
+    PDF.save(`${mainTitle || 'exported_document'}.pdf`)
   }
 
   const processMarkdownForOutline = (content: string) => {
@@ -758,8 +780,18 @@ export default () => {
     }).join('\n')
   }
 
+  const processListItems = (line: string) => {
+    // 检查是否是无序列表项
+    if (line.trim().startsWith('-')) {
+      const listItem = line.trim().substring(1).trim()
+      // 为 Word 导出添加实心圆点样式
+      return `<li style="margin-left: 37pt; margin-bottom: 6pt; list-style-type: disc;">${listItem}</li>`
+    }
+    return line
+  }
+
   return (
-    <div className="relative">
+    <div class="relative">
       {(currentAssistantMessage() || messageList().length > 0) && (
         <Outline
           markdown={processMarkdownForOutline(
@@ -800,7 +832,7 @@ export default () => {
         { currentError() && <ErrorMessageItem data={currentError()} onRetry={retryLastFetch} /> }
         <Show
           when={!loading()}
-          fallback={() => (
+          fallback={(): JSX.Element => (
             <div class="gen-cb-wrapper">
               <span>...</span>
               <div class="gen-cb-stop" onClick={stopStreamFetch}>Stop</div>
