@@ -901,12 +901,10 @@ export default () => {
   // 创建一个响应式的消息列表
   const messages = createMemo(() => messageList())
 
-  // 删除消息的函数
+  // Delete message function
   const deleteMessage = (index: number) => {
-    console.log(`Deleting message at index: ${index}`)
     setMessageList((prevMessages) => {
       const newMessages = prevMessages.filter((_, i) => i !== index)
-      console.log('Updated message list:', newMessages)
       return newMessages
     })
   }
@@ -952,16 +950,8 @@ export default () => {
                 message={message.content}
                 showRetry={() => (message.role === 'assistant' && index() === messages().length - 1)}
                 onRetry={retryLastFetch}
+                onDelete={() => deleteMessage(index())}
               />
-              <div class="absolute right-0 top-2 z-3">
-                <button
-                  onClick={() => deleteMessage(index())}
-                  class="fcc border b-transparent w-8 h-8 p-2 bg-light-300 dark:bg-dark-300 op-90 cursor-pointer hover:bg-slate/8 rounded-md text-xl transition-colors"
-                  title="Delete"
-                >
-                  <IconDelete />
-                </button>
-              </div>
             </div>
           )}
         </For>
