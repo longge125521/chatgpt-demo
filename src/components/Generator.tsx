@@ -628,6 +628,17 @@ export default () => {
           const titleText = line.replace(/^#+\s*/, '')
           PDF.setFontSize(titleSize - (level * 2))
           PDF.setTextColor(0, 0, 0)
+
+          if (level === 1) {
+            // 一级标题居中显示
+            const titleWidth = PDF.getTextWidth(titleText)
+            const titleX = (pageWidth - titleWidth) / 2
+            PDF.text(titleText, titleX, y)
+          } else {
+            // 其他级别标题靠左显示
+            PDF.text(titleText, 40, y)
+          }
+
           // 记录标题到大纲
           outlineItems.push({
             title: titleText,
@@ -635,7 +646,8 @@ export default () => {
             page: currentPage,
             y,
           })
-          line = titleText
+          y += PDF.getFontSize() * 1.5
+          return
         } else if (!isInCodeBlock) {
           PDF.setFontSize(normalSize)
           PDF.setTextColor(0, 0, 0)
