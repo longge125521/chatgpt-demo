@@ -237,7 +237,8 @@ export default () => {
       const processedContent = processExportContent(msg)
       const lines = processedContent.split('\n')
       lines.forEach((line, lineIndex) => {
-        if (lineIndex === 0) return
+        // 只跳过第一条消息的第一行
+        if (msg === messageList()[0] && lineIndex === 0) return
 
         if (line.trim().startsWith('-')) {
           if (!isInList) {
