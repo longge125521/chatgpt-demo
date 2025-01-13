@@ -487,7 +487,7 @@ export default () => {
         if (msg === messageList()[0] && line === lines[0])
           return
 
-        if (line.startsWith('```')) {
+        if (line.trim().startsWith('```')) {
           isInCodeBlock = !isInCodeBlock
           // 检查是否是配置文件代码块
           isConfigBlock = line.includes('config') || line.includes('yaml') || line.includes('yml')
@@ -625,7 +625,8 @@ export default () => {
             y += lineHeight
           } else {
             // 非代码块的文本
-            if (textLine.match(/^\d+\.\s+\*\*.+?\*\*.*$/)) {
+            if (textLine.match(/^.*?\*\*.+?\*\*.*$/)) {
+            // if (textLine.match(/^\d+\.\s+\*\*.+?\*\*.*$/)) {
               // 处理序号加粗标题的情况，如: "1. **服务器**：说明文本"
               const parts = textLine.split(/\*\*/)
               const prefix = parts[0] // "1. "
