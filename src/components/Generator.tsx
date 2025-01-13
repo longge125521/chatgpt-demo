@@ -614,8 +614,34 @@ export default () => {
           }
         }
 
+        // 在处理长文本自动换行之前添加无序列表的处理
+        if (line.trim().startsWith('-') && !isInCodeBlock) {
+          const listItem = line.trim().substring(1).trim()
+
+          // 检查是否需要新页
+          if (y > 780) {
+            PDF.addPage()
+            currentPage++
+            y = 40
+          }
+
+          // 绘制实心圆点 - 将圆点位置从 55 调整到 57
+          PDF.setFillColor(0, 0, 0)
+          PDF.circle(57, y - 6, 2, 'F')
+
+          // 处理列表项文本自动换行 - 将文本缩进从 70 调整到 72
+          const listLines = PDF.splitTextToSize(listItem, 483) // 稍微调整文本宽度
+          listLines.forEach((textLine: string, index: number) => {
+            const xPos = index === 0 ? 72 : 72 // 第一行和后续行使用相同的缩进
+            PDF.text(textLine, xPos, y - 3)
+            y += PDF.getFontSize() * 1.5
+          })
+
+          return // 处理完列表项后直接返回
+        }
+
         // 处理长文本自动换行
-        const textLines = PDF.splitTextToSize(line, isInCodeBlock ? 490 : 520) // 代码块左右留出更多空间
+        const textLines = PDF.splitTextToSize(line, isInCodeBlock ? 490 : 520)
         textLines.forEach((textLine: string) => {
           if (isInCodeBlock) {
             const lineHeight = PDF.getFontSize() * codeLineHeight
