@@ -52,16 +52,15 @@ export default ({ role, message, showRetry = () => false, onRetry }: Props) => {
       return defaultRender(tokens, idx, options, env, self)
     }
 
-    // 如果是用户消息，在渲染前添加标题标记
-    let contentToRender = ''
+    const content = typeof message === 'function' ? message() : message
+
+    // 如果是用户消息，添加一个隐藏的锚点
     if (role === 'user') {
-      // 确保消息内容作为一级标题，并且会生成锚点
-      contentToRender = `# ${typeof message === 'function' ? message() : message}`
-    } else {
-      contentToRender = typeof message === 'function' ? message() : message
+      const anchorId = content.toLowerCase().replace(/\s+/g, '-')
+      return `<div id="${anchorId}" class="user-message">${md.render(content)}</div>`
     }
 
-    return md.render(contentToRender)
+    return md.render(content)
   }
 
   return (
