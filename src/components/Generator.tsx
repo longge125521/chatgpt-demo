@@ -1,4 +1,4 @@
-import { Index, Show, createEffect, createSignal, onCleanup, onMount } from 'solid-js'
+import { For, Show, createEffect, createMemo, createSignal, onCleanup, onMount } from 'solid-js'
 import { useThrottleFn } from 'solidjs-use'
 import { saveAs } from 'file-saver'
 import { generateSignature } from '@/utils/auth'
@@ -7,6 +7,7 @@ import MessageItem from './MessageItem'
 import SystemRoleSettings from './SystemRoleSettings'
 import ErrorMessageItem from './ErrorMessageItem'
 import { Outline } from './Outline'
+import IconDelete from './icons/Delete'
 import type { ChatMessage, ErrorMessage } from '@/types'
 
 // 动态导入以避免SSR问题
@@ -33,6 +34,7 @@ export default () => {
   const [temperature, setTemperature] = createSignal(0.6)
   const temperatureSetting = (value: number) => { setTemperature(value) }
   const maxHistoryMessages = parseInt(import.meta.env.PUBLIC_MAX_HISTORY_MESSAGES || '9')
+  const [updateFlag, setUpdateFlag] = createSignal(0)
 
   createEffect(() => (isStick() && smoothToBottom()))
 
@@ -215,17 +217,27 @@ export default () => {
     }
   }
 
+  const processExportContent = (message: ChatMessage) => {
+    // 如果是用户消息，将其作为一级标题
+    if (message.role === 'user')
+      return `# ${message.content}`
+    // 如果是助手消息，保持原样
+    return message.content
+  }
+
   const exportToWord = () => {
     const mainTitle = messageList().length > 0 ? messageList()[0].content.split('\n')[0] : 'Document'
-    const messages = messageList().map((msg, index) => {
+    const messages = messageList().map((msg) => {
       let content = ''
       let isInCodeBlock = false
       let isInList = false
       let codeLanguage = ''
 
-      const lines = msg.content.split('\n')
+      // 处理消息内容，确保用户提问作为一级标题
+      const processedContent = processExportContent(msg)
+      const lines = processedContent.split('\n')
       lines.forEach((line, lineIndex) => {
-        if (index === 0 && lineIndex === 0) return
+        if (lineIndex === 0) return
 
         if (line.trim().startsWith('-')) {
           if (!isInList) {
@@ -425,16 +437,17 @@ export default () => {
   }
 
   const exportToMarkdown = () => {
-    // 获取第一行作为标题
     const mainTitle = messageList().length > 0 ? messageList()[0].content.split('\n')[0] : 'Document'
 
     // 使用消息列表来构建 markdown 内容，处理配置文件格式
-    const messages = messageList().map((msg, index) => {
-      const lines = msg.content.split('\n')
+    const messages = messageList().map((msg) => {
+      // 处理消息内容，确保用户提问作为一级标题
+      const processedContent = processExportContent(msg)
+      const lines = processedContent.split('\n')
       // 处理每一行
       const formattedLines = lines.map((line, lineIndex) => {
         // 如果是第一条消息的第一行，跳过
-        if (index === 0 && lineIndex === 0)
+        if (msg === messageList()[0] && lineIndex === 0)
           return null
 
         // 检查是否在代码块内
@@ -546,12 +559,13 @@ export default () => {
 
     // 遍历消息
     messageList().forEach((msg) => {
-      PDF.setFontSize(normalSize)
+      // 处理消息内容，确保用户提问作为一级标题
+      const processedContent = processExportContent(msg)
+      const lines = processedContent.split('\n')
       let isInCodeBlock = false
       let isConfigBlock = false // 用于标记是否是配置文件代码块
       const isInList = false // 添加列表状态标记
 
-      const lines = msg.content.split('\n')
       lines.forEach((line) => {
         // 跳过第一条消息的标题
         if (msg === messageList()[0] && line === lines[0])
@@ -837,39 +851,73 @@ export default () => {
     return line
   }
 
+  // 创建一个响应式的消息列表
+  const messages = createMemo(() => messageList())
+
+  // 删除消息的函数
+  const deleteMessage = (index: number) => {
+    console.log(`Deleting message at index: ${index}`)
+    setMessageList((prevMessages) => {
+      const newMessages = prevMessages.filter((_, i) => i !== index)
+      console.log('Updated message list:', newMessages)
+      return newMessages
+    })
+  }
+
+  createEffect(() => {
+    console.log('Current message list after update:', messages())
+  })
+
+  // 添加一个函数来处理消息内容
+  const processMessageContent = (message: ChatMessage) => {
+    // 如果是用户消息，将其作为一级标题
+    if (message.role === 'user')
+      return `# ${message.content}`
+    // 如果是助手消息，保持原样
+    return message.content
+  }
+
   return (
     <div class="relative">
-      {(currentAssistantMessage() || messageList().length > 0) && (
+      {(currentAssistantMessage() || messages().length > 0) && (
         <Outline
           markdown={processMarkdownForOutline(
-            currentAssistantMessage()
-            || (messageList().length > 0
-              ? messageList()[messageList().length - 1].content
-              : ''
-            ),
+            messages().map(msg => processMessageContent(msg)).join('\n\n')
+            + (currentAssistantMessage() ? `\n\n${currentAssistantMessage()}` : ''),
           )}
-          title={messageList().length > 0 ? messageList()[0].content.split('\n')[0] : '大纲'}
+          title={messages().length > 0 ? messages()[0].content.split('\n')[0] : '大纲'}
         />
       )}
       <div my-6>
         <SystemRoleSettings
-          canEdit={() => messageList().length === 0}
+          canEdit={() => messages().length === 0}
           systemRoleEditing={systemRoleEditing}
           setSystemRoleEditing={setSystemRoleEditing}
           currentSystemRoleSettings={currentSystemRoleSettings}
           setCurrentSystemRoleSettings={setCurrentSystemRoleSettings}
           temperatureSetting={temperatureSetting}
         />
-        <Index each={messageList()}>
+        <For each={messages()}>
           {(message, index) => (
-            <MessageItem
-              role={message().role}
-              message={message().content}
-              showRetry={() => (message().role === 'assistant' && index === messageList().length - 1)}
-              onRetry={retryLastFetch}
-            />
+            <div key={index()} class="relative">
+              <MessageItem
+                role={message.role}
+                message={message.content}
+                showRetry={() => (message.role === 'assistant' && index() === messages().length - 1)}
+                onRetry={retryLastFetch}
+              />
+              <div class="absolute right-[8.5rem] top-12px z-3">
+                <button
+                  onClick={() => deleteMessage(index())}
+                  class="fcc border b-transparent w-8 h-8 p-2 bg-light-300 dark:bg-dark-300 op-90 cursor-pointer hover:bg-slate/8 rounded-md text-xl transition-colors"
+                  title="Delete"
+                >
+                  <IconDelete />
+                </button>
+              </div>
+            </div>
           )}
-        </Index>
+        </For>
         {currentAssistantMessage() && (
           <MessageItem
             role="assistant"

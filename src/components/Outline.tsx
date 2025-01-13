@@ -42,9 +42,6 @@ export const Outline = (props: Props) => {
           'w-0 p-0 opacity-0 invisible': !isOpen(),
         }}
       >
-        <h3 class="text-sm font-bold mb-2 pr-8 dark:text-white whitespace-nowrap">
-          {props.title || '大纲'}
-        </h3>
         <ul class="space-y-2">
           <For each={outline()}>
             {item => (
