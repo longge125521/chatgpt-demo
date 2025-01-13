@@ -540,9 +540,8 @@ export default () => {
     }
 
     // 在处理代码块之前，添加一个辅助函数来计算代码块的预计高度
-    const calculateCodeBlockHeight = (lines: string[]) => {
-      const lineHeight = codeSize * codeLineHeight
-      return (lines.length * lineHeight) + codePadding.top + codePadding.bottom + (codeBlockMargin * 2)
+    const calculateLineHeight = () => {
+      return codeSize * codeLineHeight
     }
 
     // 遍历消息
@@ -560,18 +559,15 @@ export default () => {
 
         if (line.trim().startsWith('```')) {
           if (!isInCodeBlock) {
-            // 代码块开始，计算后续代码块内容的高度
-            const codeLines = []
-            let i = lines.indexOf(line) + 1
-            while (i < lines.length && !lines[i].trim().startsWith('```')) {
-              codeLines.push(lines[i])
-              i++
-            }
+            // 计算每行高度
+            const lineHeight = calculateLineHeight()
+            // 计算当前页面剩余空间能容纳的行数
+            const remainingSpace = 780 - y
+            const remainingLines = Math.floor(remainingSpace / lineHeight)
 
-            const estimatedHeight = calculateCodeBlockHeight(codeLines)
-
-            // 如果当前页剩余空间不足以容纳整个代码块，提前换页
-            if (y + estimatedHeight > 780) {
+            // 如果剩余空间不足以容纳至少3行代码，则换页
+            // 3行是为了确保至少能显示代码块的开始部分，这个数字可以根据需要调整
+            if (remainingLines < 3) {
               PDF.addPage()
               currentPage++
               y = 40
