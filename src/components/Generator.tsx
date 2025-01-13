@@ -261,7 +261,11 @@ export default () => {
             isInCodeBlock = !isInCodeBlock
           } else if (line.startsWith('#') && !isInCodeBlock) {
             const level = line.match(/^#+/)[0].length
-            content += `<h${level} class="heading-${level}">${line.replace(/^#+\s*/, '')}</h${level}>`
+            const titleText = line.replace(/^#+\s*/, '')
+            if (level === 1)
+              content += `<h1 class="heading-1">${titleText}</h1>`
+            else
+              content += `<h${level} class="heading-${level}">${titleText}</h${level}>`
           } else {
             if (isInCodeBlock) {
               // 处理代码块内的加粗文本
@@ -363,6 +367,7 @@ export default () => {
             display: block;
           }
           .heading-1 {
+            text-align: center;
             font-family: 'Arial', sans-serif;
             font-size: 20pt;
             font-weight: bold;
