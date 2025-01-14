@@ -56,12 +56,21 @@ export default ({ role, message, showRetry = () => false, onRetry, onDelete }: P
       return defaultRender(tokens, idx, options, env, self)
     }
 
+    const content = typeof message === 'function' ? message() : message
+
+    // 如果是用户消息，添加一个隐藏的锚点
+    if (role === 'user') {
+      const anchorId = content.toLowerCase().replace(/\s+/g, '-')
+      return `<div id="${anchorId}" class="user-message">${md.render(content)}</div>`
+    }
+
     // 处理代码块复制按钮
     const fence = md.renderer.rules.fence!
     md.renderer.rules.fence = (...args) => {
       const [tokens, idx] = args
       const token = tokens[idx]
       const rawCode = fence(...args)
+
 
       return `<div relative>
         <div data-code=${encodeURIComponent(token.content)} class="copy-btn gpt-copy-btn group">
