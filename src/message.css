@@ -30,6 +30,39 @@
   max-width: 100%;
 }
 
+/* 思考过程折叠样式 */
+.think-details {
+  margin: 1rem 0;
+  border: 1px solid #64748b20;
+  border-radius: 0.5rem;
+  overflow: hidden;
+}
+
+.think-summary {
+  padding: 0.6rem 1rem;
+  background-color: #64748b10;
+  cursor: pointer;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+}
+
+.think-summary::before {
+  content: '▶';
+  display: inline-block;
+  margin-right: 0.5rem;
+  font-size: 0.8rem;
+  transition: transform 0.2s;
+}
+
+.think-details[open] .think-summary::before {
+  transform: rotate(90deg);
+}
+
+.think-content {
+  padding: 1rem;
+}
+
 
 html {
   .hljs {

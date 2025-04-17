@@ -58,6 +58,16 @@ export default ({ role, message, showRetry = () => false, onRetry, onDelete }: P
 
     const content = typeof message === 'function' ? message() : message
 
+    // 处理思考过程标签，将<think>内容</think>转换为可折叠的details/summary元素
+    const processThinkTags = (htmlContent: string) => {
+      return htmlContent.replace(/<think>(([\s\S]*?))<\/think>/g, (_, thinkContent) => {
+        return `<details class="think-details">
+          <summary class="think-summary">思考过程</summary>
+          <div class="think-content">${thinkContent}</div>
+        </details>`
+      })
+    }
+
     // 如果是用户消息，添加一个隐藏的锚点
     if (role === 'user') {
       const anchorId = content.toLowerCase().replace(/\s+/g, '-')
@@ -83,12 +93,16 @@ export default ({ role, message, showRetry = () => false, onRetry, onDelete }: P
       </div>`
     }
 
+    let renderedContent = ''
     if (typeof message === 'function')
-      return md.render(message())
+      renderedContent = md.render(message())
     else if (typeof message === 'string')
-      return md.render(message)
-
-    return ''
+      renderedContent = md.render(message)
+    else
+      return ''
+      
+    // 处理思考过程标签
+    return processThinkTags(renderedContent)
   }
 
   return (
